@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAHIL 804 Bot - Free WhatsApp Bot</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+:root {
+  --bg: #e0e5ec;
+  --shadow-dark: #c8ccd1;
+  --shadow-light: #ffffff;
+  --green: #25d366;
+  --green-dark: #128c7e;
+  --text: #2d3e50;
+  --muted: #6b7a8a;
+  --blue: #4facfe;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  opacity: 0;
+  animation: fadeIn 0.8s forwards 0.1s;
+}
+@keyframes fadeIn { to { opacity: 1; } }
+
+/* ── HEADER ── */
+.header {
+  background: var(--bg);
+  padding: 40px 20px 50px;
+  text-align: center;
+  position: relative;
+  overflow: visible;
+}
+
+/* Developer Image — Heavy Animation */
+.owner-img-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+.owner-img-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green), var(--blue), #a78bfa, var(--green));
+  animation: spinRing 3s linear infinite;
+  z-index: 0;
+}
+.owner-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: conic-gradient(transparent 60%, rgba(37,211,102,0.3) 80%, transparent 100%);
+  animation: spinRing 2s linear infinite reverse;
+  z-index: 0;
+}
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.owner-img {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 5px solid var(--bg);
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    8px 8px 20px var(--shadow-dark),
+    -8px -8px 20px var(--shadow-light);
+  animation: floatImg 3s ease-in-out infinite;
+}
+@keyframes floatImg {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%       { transform: translateY(-8px) scale(1.03); }
+}
+
+/* Pulse rings around photo */
+.pulse-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  border: 2px solid rgba(37,211,102,0.4);
+  animation: pulseRing 2s ease-out infinite;
+  z-index: 0;
+}
+.pulse-ring:nth-child(2) { animation-delay: 0.6s; width: 150px; height: 150px; }
+.pulse-ring:nth-child(3) { animation-delay: 1.2s; width: 170px; height: 170px; }
+@keyframes pulseRing {
+  0%   { transform: translate(-50%,-50%) scale(0.8); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(1.4); opacity: 0; }
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -1px;
+  text-shadow: 2px 2px 4px var(--shadow-dark), -1px -1px 3px var(--shadow-light);
+}
+.header p { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+.badge {
+  display: inline-block;
+  background: var(--bg);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--green-dark);
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+/* ── CONTAINER ── */
+.container { max-width: 800px; margin: 0 auto; padding: 0 16px 40px; }
+
+/* ── OWNER BADGE ── */
+.owner-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  border-radius: 20px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  direction: rtl;
+}
+.owner-badge-img {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 3px solid var(--bg);
+  object-fit: cover;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  animation: floatImg 3s ease-in-out infinite;
+}
+.owner-badge-text { font-size: 0.85rem; }
+.owner-badge-text strong { color: var(--green-dark); display: block; font-size: 0.9rem; }
+
+/* ── TABS ── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 18px;
+  box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+}
+.tab {
+  flex: 1;
+  padding: 13px 8px;
+  text-align: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+.tab.active {
+  background: var(--bg);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  color: var(--green-dark);
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg);
+  box-shadow: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light);
+  border-radius: 24px;
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.card h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── INPUTS ── */
+label { display: block; margin-bottom: 6px; font-size: 0.8rem; color: var(--muted); font-weight: 600; text-align: right; }
+.input-wrap { margin-bottom: 14px; }
+input[type=text], input[type=password], input[type=tel] {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--bg);
+  border: none;
+  border-radius: 14px;
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  transition: box-shadow 0.2s;
+  direction: ltr;
+}
+input:focus {
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light), 0 0 0 2px rgba(37,211,102,0.35);
+}
+input::placeholder { color: var(--muted); }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  background: var(--bg);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  color: var(--text);
+}
+.btn-green {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  color: #fff;
+  box-shadow: 6px 6px 14px rgba(18,140,126,0.4), -4px -4px 10px var(--shadow-light);
+}
+.btn-green:hover { transform: translateY(-2px); box-shadow: 8px 10px 20px rgba(18,140,126,0.4), -4px -4px 10px var(--shadow-light); }
+.btn-green:active { transform: translateY(0); box-shadow: 4px 4px 8px rgba(18,140,126,0.4); }
+.btn-green:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-outline {
+  background: var(--bg);
+  border: 2px solid var(--green);
+  color: var(--green-dark);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+}
+.btn-outline:hover { background: var(--green); color: #fff; }
+
+/* ── ALERTS ── */
+.alert { padding: 14px 16px; border-radius: 14px; margin-top: 14px; font-size: 0.88rem; display: none; }
+.alert-success {
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px rgba(18,140,126,0.12), inset -4px -4px 8px var(--shadow-light);
+  color: var(--green-dark);
+  border-left: 4px solid var(--green);
+}
+.alert-error {
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px rgba(239,68,68,0.1), inset -4px -4px 8px var(--shadow-light);
+  color: var(--red);
+  border-left: 4px solid var(--red);
+}
+.alert-info {
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px rgba(79,172,254,0.1), inset -4px -4px 8px var(--shadow-light);
+  color: #3b82f6;
+  border-left: 4px solid var(--blue);
+}
+
+/* ── CODE BOX ── */
+.code-box {
+  background: var(--bg);
+  box-shadow: inset 6px 6px 14px var(--shadow-dark), inset -6px -6px 14px var(--shadow-light);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  margin: 16px 0;
+  font-size: 2.4rem;
+  letter-spacing: 12px;
+  font-weight: 800;
+  color: var(--green-dark);
+  font-family: monospace;
+  direction: ltr;
+}
+.code-label { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 6px; }
+
+/* ── STEPS ── */
+.steps { }
+.step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); direction: rtl; }
+.step:last-child { border: none; }
+.step-num {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  color: #fff;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.85rem;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 8px rgba(18,140,126,0.4);
+}
+.step-text { font-size: 0.88rem; line-height: 1.7; color: var(--text); }
+.step-text strong { color: var(--green-dark); }
+
+/* ── FEATURES GRID ── */
+.features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.feature-item {
+  background: var(--bg);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  direction: rtl;
+  transition: all 0.2s;
+}
+.feature-item:hover {
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  transform: translateY(-2px);
+}
+.feature-icon { font-size: 1.5rem; flex-shrink: 0; }
+.feature-text { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.feature-badge {
+  font-size: 0.65rem;
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  color: #fff;
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-top: 4px;
+  display: inline-block;
+  box-shadow: 2px 2px 5px rgba(18,140,126,0.3);
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 20px;
+}
+.footer a { color: var(--green-dark); text-decoration: none; font-weight: 600; }
+
+/* ── SPINNER ── */
+.spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Confirm toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--bg);
+  box-shadow: 10px 10px 24px var(--shadow-dark), -10px -10px 24px var(--shadow-light);
+  padding: 14px 28px;
+  border-radius: 30px;
+  color: var(--green-dark);
+  font-weight: 700;
+  font-size: 0.9rem;
+  z-index: 999;
+  transition: transform 0.3s ease;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 600px) {
+  .header h1 { font-size: 1.5rem; }
+  .features-grid { grid-template-columns: 1fr; }
+  .code-box { font-size: 1.8rem; letter-spacing: 6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="owner-img-wrap">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Sahil Hacker" class="owner-img">
+  </div>
+  <h1>🤖 SAHIL 804 BOT</h1>
+  <p>Free WhatsApp Bot — Bilkul Muft!</p>
+  <div class="badge">⚡ Powered by Sahil Hacker | v4.0.0</div>
+</div>
+
+<div class="container">
+
+  <div class="owner-badge">
+    <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Owner" class="owner-badge-img">
+    <div class="owner-badge-text">
+      <strong>👑 Developer: Sahil Hacker</strong>
+      📞 Contact: +92 349 6049312
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pair')">📱 Pair Karein</button>
+    <button class="tab" onclick="switchTab('deploy')">🚀 Bot Deploy</button>
+    <button class="tab" onclick="switchTab('features')">⭐ Features</button>
+  </div>
+
+  <!-- TAB 1: PAIR -->
+  <div id="tab-pair" class="tab-content active">
+    <div class="card">
+      <h2><span>📱</span> WhatsApp Pair Karein</h2>
+      <label>Apna WhatsApp Number (with country code)</label>
+      <div class="input-wrap">
+        <input type="tel" id="pairNumber" placeholder="923001234567" dir="ltr" maxlength="15">
+      </div>
+      <button class="btn btn-green" onclick="doPair()" id="pairBtn">📲 Pair Code Mangvayein</button>
+      <div class="alert alert-error" id="pairError"></div>
+      <div id="pairResult" style="display:none">
+        <div class="alert alert-success" id="pairSuccess" style="display:block">✅ Pair code aa gaya!</div>
+        <div class="code-box" id="pairCode">----</div>
+        <div class="code-label">Yeh code WhatsApp → Linked Devices → Link a Device mein dalein</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>📖</span> Kaise Karein?</h2>
+      <div class="steps">
+        <div class="step"><div class="step-num">1</div><div class="step-text">Upar apna <strong>WhatsApp number</strong> likha aur "Pair Code Mangvayein" dabayein</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Jo <strong>8 anka code</strong> aaye, use copy karein</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">WhatsApp kholein → <strong>3 dots</strong> → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → <strong>Phone Number se Link karein</strong></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Code dalne ke baad WhatsApp par <strong>Session ID</strong> aayega</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text">"Bot Deploy" tab mein jayen aur Session ID paste karein</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text">✅ <strong>Bot chal jaayega!</strong></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DEPLOY -->
+  <div id="tab-deploy" class="tab-content">
+    <div class="card">
+      <h2><span>🚀</span> Bot Chalayein</h2>
+      <label>Session ID (WhatsApp par mila tha)</label>
+      <div class="input-wrap">
+        <input type="text" id="deploySession" placeholder="SAH-XXXXXXXX" dir="ltr">
+      </div>
+      <button class="btn btn-green" onclick="doDeploy()" id="deployBtn">⚡ Bot Start Karein</button>
+      <div class="alert" id="deployMsg"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: FEATURES -->
+  <div id="tab-features" class="tab-content">
+    <div class="card">
+      <h2><span>⭐</span> Bot Ki Khasiyatein</h2>
+      <div class="features-grid">
+        <div class="feature-item"><div class="feature-icon">📥</div><div><div class="feature-text">TikTok Download</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">📸</div><div><div class="feature-text">Instagram Reel/Post</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">📘</div><div><div class="feature-text">Facebook Video</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🎵</div><div><div class="feature-text">YouTube MP3</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🐦</div><div><div class="feature-text">Twitter/X Video</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🎬</div><div><div class="feature-text">Dailymotion</div><div class="feature-badge">✅ Working</div></div></div>
+        <div class="feature-item"><div class="feature-icon">❤️</div><div><div class="feature-text">Auto React</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">💬</div><div><div class="feature-text">Auto Reply</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🗑️</div><div><div class="feature-text">Anti-Delete</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🚫</div><div><div class="feature-text">Anti-Spam</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🔗</div><div><div class="feature-text">Anti-Link</div><div class="feature-badge">⚙️ Owner</div></div></div>
+        <div class="feature-item"><div class="feature-icon">👋</div><div><div class="feature-text">Welcome Message</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">👥</div><div><div class="feature-text">Group Management</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">📢</div><div><div class="feature-text">Broadcast</div><div class="feature-badge">✅ Owner</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🎮</div><div><div class="feature-text">Fun Commands</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🔒</div><div><div class="feature-text">Block/Unblock</div><div class="feature-badge">✅ Owner</div></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span>📝</span> Commands List</h2>
+      <div style="font-size:0.85rem;line-height:2.2;direction:ltr;color:var(--muted);">
+        <strong style="color:var(--green-dark)">.menu / .help</strong> — Tamam commands<br>
+        <strong style="color:var(--green-dark)">.ping</strong> — Bot speed<br>
+        <strong style="color:var(--green-dark)">.alive</strong> — Bot status<br>
+        <strong style="color:var(--green-dark)">.owner</strong> — Developer info<br>
+        <strong style="color:var(--green-dark)">.dl &lt;url&gt;</strong> — Smart download<br>
+        <strong style="color:var(--green-dark)">.tiktok .ig .fb .ytmp3 .twitter .dm</strong> — Platform downloads<br>
+        <strong style="color:var(--green-dark)">.joke .quote .flip .dice .fact</strong> — Fun<br>
+        <strong style="color:var(--green-dark)">.kick .add .promote .demote</strong> — Group admin<br>
+        <strong style="color:var(--green-dark)">.mute .unmute .tagall .groupinfo</strong> — Group tools<br>
+        <strong style="color:var(--green-dark)">.autoreact .autoreply .antilink .antispam</strong> — Owner settings<br>
+        <strong style="color:var(--green-dark)">.broadcast .block .unblock</strong> — Owner commands
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Made with ❤️ by <a href="https://wa.me/923496049312">Sahil Hacker</a> | SAHIL 804 v4.0.0<br>
+  <small>Free bot for Pakistani students 🇵🇰</small>
+</div>
+
+<div class="toast" id="toast">✅ Copied!</div>
+
+<script>
+const socket = io();
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['pair','deploy','features'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function doPair() {
+  const num = document.getElementById('pairNumber').value.replace(/[^0-9]/g,'');
+  const errEl = document.getElementById('pairError');
+  errEl.style.display = 'none';
+  if (num.length < 10) { errEl.textContent = '❌ Sahi number dein (country code ke saath)'; errEl.style.display='block'; return; }
+  const btn = document.getElementById('pairBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Intezaar karein...';
+  try {
+    const r = await fetch('/api/pair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ number: num }) });
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('pairCode').textContent = d.code;
+      document.getElementById('pairResult').style.display = 'block';
+      document.getElementById('deploySession').value = d.sessionId;
+      showToast('✅ Pair code mil gaya!');
+    } else {
+      errEl.textContent = '❌ ' + d.error;
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '❌ Server error. Dobara try karein.';
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '📲 Pair Code Mangvayein';
+}
+
+async function doDeploy() {
+  const id = document.getElementById('deploySession').value.trim();
+  const msgEl = document.getElementById('deployMsg');
+  if (!id) { msgEl.className='alert alert-error'; msgEl.textContent='❌ Session ID dein.'; msgEl.style.display='block'; return; }
+  const btn = document.getElementById('deployBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Start ho raha hai...';
+  try {
+    const r = await fetch('/api/deploy', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: id }) });
+    const d = await r.json();
+    if (d.success) {
+      msgEl.className = 'alert alert-success';
+      msgEl.textContent = '✅ ' + d.message;
+      showToast('🚀 Bot start ho gaya!');
+    } else {
+      msgEl.className = 'alert alert-error';
+      msgEl.textContent = '❌ ' + d.error;
+    }
+  } catch(e) {
+    msgEl.className = 'alert alert-error';
+    msgEl.textContent = '❌ Server error.';
+  }
+  msgEl.style.display = 'block';
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Bot Start Karein';
+}
+</script>
+</body>
+</html>

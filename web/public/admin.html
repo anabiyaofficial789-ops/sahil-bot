@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAHIL 804 - Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+:root {
+  --bg: #e0e5ec;
+  --shadow-dark: #c8ccd1;
+  --shadow-light: #ffffff;
+  --green: #25d366;
+  --green-dark: #128c7e;
+  --text: #2d3e50;
+  --muted: #6b7a8a;
+  --blue: #4facfe;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  opacity: 0;
+  animation: fadeIn 0.7s forwards 0.1s;
+}
+@keyframes fadeIn { to { opacity: 1; } }
+
+/* ── LOGIN ── */
+.login-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+.login-card {
+  background: var(--bg);
+  box-shadow: 20px 20px 40px var(--shadow-dark), -20px -20px 40px var(--shadow-light);
+  border-radius: 36px;
+  padding: 50px 36px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+/* Developer Image — Heavy Animation */
+.login-img-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+.login-img-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green), var(--blue), #a78bfa, var(--green));
+  animation: spinRing 3s linear infinite;
+  z-index: 0;
+}
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.login-img-wrap img {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  border: 5px solid var(--bg);
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+  box-shadow: 8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light);
+  animation: floatImg 3s ease-in-out infinite;
+}
+@keyframes floatImg {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%       { transform: translateY(-7px) scale(1.03); }
+}
+
+/* Pulse rings */
+.pulse-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  border: 2px solid rgba(37,211,102,0.35);
+  animation: pulseRing 2s ease-out infinite;
+  z-index: 0;
+}
+.pulse-ring:nth-child(2) { animation-delay: 0.7s; width: 130px; height: 130px; }
+.pulse-ring:nth-child(3) { animation-delay: 1.4s; width: 150px; height: 150px; }
+@keyframes pulseRing {
+  0%   { transform: translate(-50%,-50%) scale(0.8); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(1.5); opacity: 0; }
+}
+
+.login-card h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; color: var(--text); }
+.login-card p { color: var(--muted); font-size: 0.85rem; margin-bottom: 28px; }
+
+.alert-login {
+  padding: 12px;
+  border-radius: 14px;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+  display: none;
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px rgba(239,68,68,0.1), inset -4px -4px 8px var(--shadow-light);
+  color: var(--red);
+  border-left: 4px solid var(--red);
+  text-align: right;
+}
+
+input[type=password], input[type=text] {
+  width: 100%;
+  padding: 15px 18px;
+  background: var(--bg);
+  border: none;
+  border-radius: 14px;
+  box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+  color: var(--text);
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  outline: none;
+  text-align: left;
+  direction: ltr;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s;
+}
+input:focus {
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light), 0 0 0 2px rgba(37,211,102,0.3);
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s;
+  background: var(--bg);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  color: var(--text);
+}
+.btn-green {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  color: #fff;
+  box-shadow: 6px 6px 14px rgba(18,140,126,0.4), -4px -4px 10px var(--shadow-light);
+}
+.btn-green:hover { transform: translateY(-2px); }
+.btn-red { background: var(--red); color: #fff; padding: 7px 16px; width: auto; font-size: 0.75rem; border-radius: 10px; margin-left: 5px; box-shadow: 3px 3px 8px rgba(239,68,68,0.3); }
+.btn-yellow { background: var(--yellow); color: #fff; padding: 7px 16px; width: auto; font-size: 0.75rem; border-radius: 10px; margin-left: 5px; box-shadow: 3px 3px 8px rgba(245,158,11,0.3); }
+.btn-gray { background: var(--bg); color: var(--muted); padding: 7px 16px; width: auto; font-size: 0.75rem; border-radius: 10px; margin-left: 5px; box-shadow: 3px 3px 8px var(--shadow-dark), -3px -3px 8px var(--shadow-light); }
+.btn-green-sm { background: linear-gradient(135deg, var(--green-dark), var(--green)); color: #fff; padding: 7px 16px; width: auto; font-size: 0.75rem; border-radius: 10px; margin-left: 5px; box-shadow: 3px 3px 8px rgba(18,140,126,0.3); }
+
+/* ── DASHBOARD ── */
+.dashboard { display: none; min-height: 100vh; }
+
+.topbar {
+  background: var(--bg);
+  box-shadow: 0 6px 20px var(--shadow-dark), 0 -2px 10px var(--shadow-light);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 14px; }
+.topbar-left img {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  border: 3px solid var(--bg);
+  animation: floatImg 3s ease-in-out infinite;
+}
+.topbar h2 { font-size: 1rem; font-weight: 800; color: var(--text); }
+.topbar span { font-size: 0.72rem; color: var(--muted); display: block; }
+.logout-btn {
+  background: var(--bg);
+  box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  border: none;
+  color: var(--muted);
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.logout-btn:hover { color: var(--red); }
+
+.content { padding: 28px; max-width: 1200px; margin: 0 auto; }
+
+/* ── STATS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--bg);
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  border-radius: 20px;
+  padding: 22px;
+  text-align: center;
+  transition: all 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 12px 12px 24px var(--shadow-dark), -12px -12px 24px var(--shadow-light); }
+.stat-num { font-size: 2.2rem; font-weight: 800; }
+.stat-num.green { color: var(--green-dark); }
+.stat-num.red { color: var(--red); }
+.stat-num.yellow { color: var(--yellow); }
+.stat-num.blue { color: #3b82f6; }
+.stat-label { font-size: 0.73rem; color: var(--muted); margin-top: 6px; font-weight: 600; }
+
+/* ── FEATURES PANEL ── */
+.features-panel {
+  background: var(--bg);
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  border-radius: 22px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.features-panel h3 { font-size: 1rem; font-weight: 800; margin-bottom: 18px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.feature-toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.feature-toggle {
+  background: var(--bg);
+  box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.feature-toggle-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+
+/* Toggle switch */
+.toggle-switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--shadow-dark);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+  border-radius: 26px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.toggle-slider:before {
+  content: '';
+  position: absolute;
+  width: 20px; height: 20px;
+  left: 3px; top: 3px;
+  background: var(--bg);
+  box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  border-radius: 50%;
+  transition: 0.3s;
+}
+input:checked + .toggle-slider { background: linear-gradient(135deg, var(--green-dark), var(--green)); box-shadow: inset 2px 2px 4px rgba(18,140,126,0.4); }
+input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+/* ── SESSIONS ── */
+.sessions-panel {
+  background: var(--bg);
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  border-radius: 22px;
+  padding: 24px;
+}
+.sessions-panel h3 { font-size: 1rem; font-weight: 800; margin-bottom: 18px; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.session-item {
+  background: var(--bg);
+  box-shadow: 5px 5px 12px var(--shadow-dark), -5px -5px 12px var(--shadow-light);
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  transition: all 0.2s;
+}
+.session-item:hover { box-shadow: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light); }
+
+.session-info { display: flex; align-items: center; gap: 14px; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-dot.offline { background: var(--shadow-dark); box-shadow: inset 2px 2px 4px var(--shadow-dark); }
+.status-dot.connecting { background: var(--yellow); animation: pulse 1s infinite; }
+.status-dot.logged_out { background: var(--red); box-shadow: 0 0 6px var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.session-id { font-family: monospace; font-size: 0.85rem; direction: ltr; color: var(--text); font-weight: 600; }
+.session-num { font-size: 0.73rem; color: var(--muted); }
+.session-status { font-size: 0.72rem; font-weight: 700; }
+.session-status.online { color: var(--green-dark); }
+.session-status.offline { color: var(--muted); }
+.session-status.connecting { color: var(--yellow); }
+.session-status.logged_out { color: var(--red); }
+.session-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+.empty-state { text-align: center; padding: 50px; color: var(--muted); font-size: 0.9rem; }
+
+.refresh-btn {
+  background: var(--bg);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  border: none;
+  color: var(--muted);
+  padding: 8px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  margin-right: auto;
+  transition: all 0.2s;
+}
+.refresh-btn:hover { color: var(--green-dark); }
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--bg);
+  box-shadow: 10px 10px 24px var(--shadow-dark), -10px -10px 24px var(--shadow-light);
+  padding: 14px 28px;
+  border-radius: 30px;
+  color: var(--green-dark);
+  font-weight: 700;
+  font-size: 0.9rem;
+  z-index: 999;
+  transition: transform 0.3s ease;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 600px) {
+  .content { padding: 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .feature-toggles { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-img-wrap">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Sahil Hacker">
+    </div>
+    <h1>👑 Admin Panel</h1>
+    <p>SAHIL 804 Bot | Developer: Sahil Hacker</p>
+    <div class="alert-login" id="loginError">❌ Password galat hai!</div>
+    <input type="password" id="adminPass" placeholder="Admin Password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-green" onclick="doLogin()">🔐 Login</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Owner">
+      <div>
+        <h2>SAHIL 804 Admin</h2>
+        <span>Developer: Sahil Hacker</span>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">🚪 Logout</button>
+  </div>
+
+  <div class="content">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-num green" id="statTotal">-</div><div class="stat-label">Total Users</div></div>
+      <div class="stat-card"><div class="stat-num green" id="statOnline">-</div><div class="stat-label">Online Bots</div></div>
+      <div class="stat-card"><div class="stat-num red" id="statOffline">-</div><div class="stat-label">Offline Bots</div></div>
+      <div class="stat-card"><div class="stat-num yellow" id="statUptime">-</div><div class="stat-label">Server Uptime (min)</div></div>
+      <div class="stat-card"><div class="stat-num blue" id="statMem">-</div><div class="stat-label">Memory (MB)</div></div>
+    </div>
+
+    <!-- Features Panel -->
+    <div class="features-panel">
+      <h3>⚙️ Bot Features Control</h3>
+      <div class="feature-toggles" id="featureToggles">
+        <div style="color:var(--muted);font-size:0.85rem">Load ho raha hai...</div>
+      </div>
+    </div>
+
+    <!-- Sessions -->
+    <div class="sessions-panel">
+      <h3>
+        👥 All User Bots
+        <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+      </h3>
+      <div id="sessionsList"><div class="empty-state">Load ho raha hai...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ Done!</div>
+
+<script>
+const socket = io();
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function doLogin() {
+  const pw = document.getElementById('adminPass').value;
+  const r = await fetch('/api/admin/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw }) });
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+    loadFeatures();
+    setInterval(loadData, 30000);
+    setInterval(loadStats, 15000);
+    showToast('✅ Login kamyab!');
+  } else {
+    const el = document.getElementById('loginError');
+    el.style.display = 'block';
+    setTimeout(() => el.style.display='none', 3000);
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/admin/logout', { method:'POST' });
+  location.reload();
+}
+
+async function loadStats() {
+  const r = await fetch('/api/admin/stats');
+  const d = await r.json();
+  if (d.success) {
+    const s = d.stats;
+    document.getElementById('statTotal').textContent  = s.total;
+    document.getElementById('statOnline').textContent  = s.online;
+    document.getElementById('statOffline').textContent = s.offline;
+    document.getElementById('statUptime').textContent  = Math.floor(s.uptime/60);
+    document.getElementById('statMem').textContent     = s.memory;
+  }
+}
+
+async function loadData() {
+  await loadStats();
+  const r = await fetch('/api/admin/sessions');
+  const d = await r.json();
+  if (!d.success) return;
+  const el = document.getElementById('sessionsList');
+  if (!d.sessions.length) { el.innerHTML = '<div class="empty-state">📭 Abhi koi user nahi hai</div>'; return; }
+  el.innerHTML = d.sessions.map(s => `
+    <div class="session-item">
+      <div class="session-info">
+        <div class="status-dot ${s.status}"></div>
+        <div>
+          <div class="session-id">${s.id}</div>
+          <div class="session-num">📞 ${s.number || 'Unknown'}</div>
+          <div class="session-status ${s.status}">${getStatusText(s.status)}</div>
+        </div>
+      </div>
+      <div class="session-actions">
+        <a href="https://wa.me/${s.number}" target="_blank"><button class="btn btn-green-sm">💬 Chat</button></a>
+        <button class="btn btn-yellow" onclick="restartBot('${s.id}')">🔄 Restart</button>
+        <button class="btn btn-gray" onclick="stopBot('${s.id}')">⏹ Stop</button>
+        <button class="btn btn-red" onclick="deleteBot('${s.id}')">🗑 Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getStatusText(s) {
+  return { online:'🟢 Online', offline:'⚫ Offline', connecting:'🟡 Connecting...', logged_out:'🔴 Logged Out', stopped:'⚫ Stopped', qr:'🟡 QR Wait', pairing:'🟡 Pairing' }[s] || s;
+}
+
+async function stopBot(id) {
+  if (!confirm('Bot band karein?')) return;
+  await fetch('/api/admin/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: id }) });
+  loadData();
+  showToast('⏹ Bot band kar diya');
+}
+
+async function restartBot(id) {
+  await fetch('/api/admin/restart', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: id }) });
+  loadData();
+  showToast('🔄 Bot restart ho raha hai...');
+}
+
+async function deleteBot(id) {
+  if (!confirm('Yeh session hamesha k liye delete ho jaayega! Sure?')) return;
+  await fetch('/api/admin/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: id }) });
+  loadData();
+  showToast('🗑 Session delete ho gaya');
+}
+
+async function loadFeatures() {
+  const r = await fetch('/api/admin/features');
+  const d = await r.json();
+  if (!d.success) return;
+  const features = d.features;
+  const labels = {
+    autoReact: '❤️ Auto React', autoReply: '💬 Auto Reply', autoRead: '👁 Auto Read',
+    antiDelete: '🗑️ Anti-Delete', welcomeMsg: '👋 Welcome Msg', goodbyeMsg: '🚪 Goodbye Msg',
+    antiSpam: '🚫 Anti-Spam', antiLink: '🔗 Anti-Link', antiBot: '🤖 Anti-Bot',
+  };
+  document.getElementById('featureToggles').innerHTML = Object.entries(features).map(([k,v]) => `
+    <div class="feature-toggle">
+      <span class="feature-toggle-name">${labels[k] || k}</span>
+      <label class="toggle-switch">
+        <input type="checkbox" ${v?'checked':''} onchange="toggleFeature('${k}', this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+async function toggleFeature(feature, value) {
+  await fetch('/api/admin/feature', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ feature, value }) });
+  showToast(value ? '✅ Feature on kar diya' : '⛔ Feature off kar diya');
+}
+
+socket.on('sessions_update', () => loadData());
+</script>
+</body>
+</html>
