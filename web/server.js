@@ -7,13 +7,13 @@ const express      = require('express');
 const session      = require('express-session');
 const bodyParser   = require('body-parser');
 const rateLimit    = require('express-rate-limit');
-const compression  = require('compression');   // PERF #1
-const helmet       = require('helmet');         // SEC #1
+const compression  = require('compression');
+const helmet       = require('helmet');
 const http         = require('http');
 const { Server }   = require('socket.io');
 const path         = require('path');
 const fs           = require('fs-extra');
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, makeCacheableSignalKeyStore, Browsers } = require('@whiskeysockets/baileys');
 const pino         = require('pino');
 
 const config       = require('../src/config/config');
@@ -29,16 +29,13 @@ const server = http.createServer(app);
 const io     = new Server(server);
 const silentLogger = pino({ level: 'silent' });
 
-// ── SEC #1: helmet — sensible HTTP security headers ───────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: false,     // disabled so the frontend SPA works without a custom policy
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
 
-// ── PERF #1: gzip compression for all responses ───────────────────────────────
 app.use(compression());
 
-// ── PERF #4: Static files with cache headers ──────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public'), {
   maxAge: '1d',
   setHeaders(res, filePath) {
@@ -57,11 +54,9 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000, httpOnly: true, sameSite: 'lax' },
 }));
 
-// ── Rate limiters ─────────────────────────────
 const generalLimiter = rateLimit({ windowMs: 60_000, max: 30, message: { error: 'Too many requests' } });
 app.use('/api/', generalLimiter);
 
-// ── SEC #3: Stricter pair rate limit — 5 attempts per 10 minutes per IP ───────
 const pairLimiter = rateLimit({
   windowMs: 10 * 60_000,
   max: 5,
@@ -70,7 +65,6 @@ const pairLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// ── SEC #2: Safe session-ID resolver (path traversal prevention) ──────────────
 function safeSessionPath(sessionId) {
   if (!/^[a-zA-Z0-9_-]{4,64}$/.test(sessionId)) return null;
   const resolved = path.resolve(path.join(SESSIONS_DIR, sessionId));
@@ -78,10 +72,8 @@ function safeSessionPath(sessionId) {
   return resolved;
 }
 
-// ── Active Sockets Store ──────────────────────
 const waSockets = new Map();
 
-// ── Launch a user's bot ───────────────────────
 async function launchUserBot(sessionId) {
   const authDir = safeSessionPath(sessionId);
   if (!authDir) { logger.warn(`Invalid sessionId blocked: ${sessionId}`); return; }
@@ -95,7 +87,7 @@ async function launchUserBot(sessionId) {
     auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, silentLogger) },
     logger: silentLogger,
     printQRInTerminal: false,
-    browser: ['SAHIL 804', 'Chrome', '4.0.0'],
+    browser: Browsers.ubuntu('Chrome'),
     syncFullHistory: false,
     generateHighQualityLinkPreview: true,
     getMessage: async () => ({ conversation: '' }),
@@ -146,7 +138,6 @@ async function launchUserBot(sessionId) {
   return sock;
 }
 
-// ── BUG #2 + SEC #3: Pairing API ─────────────
 app.post('/api/pair', pairLimiter, async (req, res) => {
   try {
     let { number } = req.body;
@@ -167,23 +158,32 @@ app.post('/api/pair', pairLimiter, async (req, res) => {
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, silentLogger) },
       logger: silentLogger,
       printQRInTerminal: false,
-      browser: ['SAHIL 804', 'Chrome', '4.0.0'],
+      browser: Browsers.ubuntu('Chrome'),
     });
 
     sock.ev.on('creds.update', saveCreds);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Socket ready hone ka wait — 3 second
+    await new Promise((resolve) => {
+      const timeout = setTimeout(resolve, 3000);
+      sock.ev.on('connection.update', (update) => {
+        if (update.connection === 'connecting') {
+          clearTimeout(timeout);
+          setTimeout(resolve, 1500);
+        }
+      });
+    });
 
     let code;
     try {
       code = await sock.requestPairingCode(number);
     } catch (e) {
-      return res.json({ success: false, error: 'Pair code nahi mila. Number check karein.' });
+      logger.error('Pair code error:', e.message);
+      return res.json({ success: false, error: `Pair code nahi mila: ${e.message}. Number check karein (country code ke saath, jaise 923001234567).` });
     }
 
     createSession(sessionId, { number, status: 'pairing' });
 
-    // BUG #2: Auto-deploy immediately when pairing socket reaches 'open'
     sock.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect } = update;
       if (connection === 'open') {
@@ -197,7 +197,6 @@ app.post('/api/pair', pairLimiter, async (req, res) => {
           io.emit('sessions_update', getAllSessions());
         } catch (_) {}
 
-        // Hand off from thin pairing socket → full-featured bot launcher
         setTimeout(() => {
           try { sock.ws.close(); } catch (_) {}
           waSockets.delete(sessionId);
@@ -207,7 +206,6 @@ app.post('/api/pair', pairLimiter, async (req, res) => {
       }
       if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
-        // Only fall back to full launcher if the socket closed before we could hand off
         if (statusCode !== 401 && !waSockets.has(sessionId)) {
           setTimeout(() => launchUserBot(sessionId), 3000);
         }
@@ -221,19 +219,16 @@ app.post('/api/pair', pairLimiter, async (req, res) => {
   }
 });
 
-// ── Deploy Bot ────────────────────────────────
 app.post('/api/deploy', async (req, res) => {
   try {
     const { sessionId } = req.body;
     if (!sessionId) return res.json({ success: false, error: 'Session ID dein.' });
 
-    // SEC #2: validate before path construction
     const authDir = safeSessionPath(sessionId);
     if (!authDir || !fs.existsSync(authDir)) {
       return res.json({ success: false, error: 'Session nahi mili. Pehle pair karein.' });
     }
 
-    // BUG #6: Require creds.json — not just the directory
     const credsFile = path.join(authDir, 'creds.json');
     if (!fs.existsSync(credsFile)) {
       return res.json({ success: false, error: 'Credentials nahi milein. Pehle pair karein.' });
@@ -252,7 +247,6 @@ app.post('/api/deploy', async (req, res) => {
   }
 });
 
-// ── PERF #5: Health endpoint ──────────────────
 app.get('/health', (req, res) => {
   const sessions = getAllSessions();
   const online   = sessions.filter(s => s.status === 'online').length;
@@ -264,7 +258,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── Admin Routes ──────────────────────────────
 function requireAdmin(req, res, next) {
   if (req.session?.isAdmin) return next();
   res.json({ success: false, error: 'Login required.' });
@@ -342,7 +335,6 @@ app.get('/api/admin/features', requireAdmin, (req, res) => {
   res.json({ success: true, features: config.features });
 });
 
-// ── Socket.IO ─────────────────────────────────
 io.on('connection', (socket) => {
   socket.on('join', (sessionId) => socket.join(sessionId));
   socket.on('get_sessions', () => {
@@ -352,13 +344,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// ── Auto-start existing sessions ──────────────
 async function autoStartSessions() {
   const sessions = getAllSessions();
   logger.info(`${sessions.length} sessions milein — restart ho rahi hain...`);
   for (const s of sessions) {
     if (s.status !== 'logged_out') {
-      // BUG #6: skip sessions with no credentials on disk
       const authDir   = safeSessionPath(s.id);
       const credsFile = authDir ? path.join(authDir, 'creds.json') : null;
       if (!credsFile || !fs.existsSync(credsFile)) {
@@ -371,7 +361,6 @@ async function autoStartSessions() {
   }
 }
 
-// ── BUG #5: Graceful shutdown ─────────────────
 async function gracefulShutdown(signal) {
   logger.info(`${signal} mila — graceful shutdown shuru...`);
   for (const [id, sock] of waSockets) {
@@ -383,14 +372,12 @@ async function gracefulShutdown(signal) {
     logger.info('HTTP server band ho gaya. Bye!');
     process.exit(0);
   });
-  // Force-exit after 10 s if something hangs
   setTimeout(() => { logger.error('Force exit after timeout'); process.exit(1); }, 10_000).unref();
 }
 
 process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-// ── Start Server ──────────────────────────────
 server.listen(config.port, async () => {
   logger.info(`🌐 Server chalu: http://localhost:${config.port}`);
   logger.info(`👑 Developer: ${config.owner.name}`);
