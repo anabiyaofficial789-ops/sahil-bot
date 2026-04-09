@@ -1,7 +1,6 @@
 // ============================================
 // SAHIL 804 - Full Commands Handler
 // Developer: Sahil Hacker | v4.0.0
-// ⚠️ Owner info is LOCKED & cannot be changed
 // ============================================
 const axios  = require('axios');
 const fs     = require('fs-extra');
@@ -47,8 +46,25 @@ async function sendAudio(sock, msg, url) {
   return sock.sendMessage(msg.key.remoteJid, { audio: { url }, mimetype: 'audio/mpeg', ptt: false }, { quoted: msg });
 }
 
+// ── Smart Emoji Picker ────────────────────────
+// Picks emoji based on message text keywords, else random from pool
+function pickEmoji(text = '') {
+  const lower = text.toLowerCase();
+  for (const [keyword, emoji] of Object.entries(config.reactKeywords || {})) {
+    if (lower.includes(keyword)) return emoji;
+  }
+  const pool = config.reactEmojis;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ── MENU IMAGE (Sahil's image, locked) ───────
 const MENU_IMAGE = 'https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg';
+
+// ── Mode guard — blocks non-owners in private mode ──
+function isBotAllowed(senderJid) {
+  if (config.botMode === 'private') return isOwner(senderJid);
+  return true; // public — everyone allowed
+}
 
 // ── All Commands ─────────────────────────────
 const commands = {
@@ -58,6 +74,8 @@ const commands = {
   // ════════════════════════════════════════════
   async menu(sock, msg) {
     const uptime = formatUptime(Date.now() - config.bot.startTime);
+    const p = config.bot.prefix;
+    const modeTag = config.botMode === 'private' ? '🔒 PRIVATE' : '🌐 PUBLIC';
     const text = `
 ╔═══════════════════════════╗
 ║    🤖 *${config.bot.name}* v${config.bot.version}    ║
@@ -66,77 +84,83 @@ const commands = {
 👑 *Developer:* ${config.owner.name}
 📞 *Contact:* wa.me/${config.owner.number}
 ⚡ *Uptime:* ${uptime}
+🔰 *Mode:* ${modeTag}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📥 *DOWNLOADS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}dl <url>\` — Smart Download (all sites)
-▸ \`${config.bot.prefix}tiktok <url>\` — TikTok (no watermark)
-▸ \`${config.bot.prefix}ig <url>\` — Instagram Reel/Post
-▸ \`${config.bot.prefix}fb <url>\` — Facebook Video
-▸ \`${config.bot.prefix}ytmp3 <url>\` — YouTube Audio
-▸ \`${config.bot.prefix}twitter <url>\` — Twitter/X Video
-▸ \`${config.bot.prefix}dm <url>\` — Dailymotion Video
+▸ \`${p}dl <url>\` — Smart Download (all sites)
+▸ \`${p}t <url>\` — TikTok (no watermark)
+▸ \`${p}i <url>\` — Instagram Reel/Post
+▸ \`${p}f <url>\` — Facebook Video
+▸ \`${p}y <url>\` — YouTube Audio (MP3)
+▸ \`${p}tw <url>\` — Twitter/X Video
+▸ \`${p}dm <url>\` — Dailymotion Video
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔍 *LOOKUP / INFO*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}sim <number>\` — SIM record check
-▸ \`${config.bot.prefix}weather <city>\` — Mausam ki khabar
-▸ \`${config.bot.prefix}news\` — Pakistan News (BBC Urdu)
-▸ \`${config.bot.prefix}calc <expr>\` — Calculator
-▸ \`${config.bot.prefix}id\` — Aapka WhatsApp JID
+▸ \`${p}sim <number>\` — SIM record check
+▸ \`${p}weather <city>\` — Weather info
+▸ \`${p}news\` — Pakistan News (BBC Urdu)
+▸ \`${p}calc <expr>\` — Calculator
+▸ \`${p}id\` — Your WhatsApp JID
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎨 *STICKER TOOLS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}sticker\` — Image/Video → Sticker
-▸ \`${config.bot.prefix}toimg\` — Sticker → Image
+▸ \`${p}sticker\` — Image/Video → Sticker
+▸ \`${p}toimg\` — Sticker → Image
+▸ \`${p}view\` — View once media save karein
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ℹ️ *BOT INFO*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}ping\` — Bot speed check
-▸ \`${config.bot.prefix}alive\` — Bot status
-▸ \`${config.bot.prefix}owner\` — Developer info
-▸ \`${config.bot.prefix}menu\` — Yeh menu
+▸ \`${p}ping\` — Bot speed check
+▸ \`${p}alive\` — Bot status
+▸ \`${p}owner\` — Developer info
+▸ \`${p}settings\` — Toggle features on/off
+▸ \`${p}menu\` — This menu
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎮 *FUN COMMANDS*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}joke\` — Random joke
-▸ \`${config.bot.prefix}quote\` — Motivational quote
-▸ \`${config.bot.prefix}flip\` — Coin flip
-▸ \`${config.bot.prefix}dice\` — Dice roll
-▸ \`${config.bot.prefix}fact\` — Random fact
+▸ \`${p}joke\` — Random joke
+▸ \`${p}quote\` — Motivational quote
+▸ \`${p}flip\` — Coin flip
+▸ \`${p}dice\` — Dice roll
+▸ \`${p}fact\` — Random fact
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👥 *GROUP COMMANDS* (Admin)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}kick @user\` — Group se nikalen
-▸ \`${config.bot.prefix}add 923...\` — Group mein add karen
-▸ \`${config.bot.prefix}promote @user\` — Admin banaen
-▸ \`${config.bot.prefix}demote @user\` — Admin hataaen
-▸ \`${config.bot.prefix}mute\` — Group mute (sirf admins)
-▸ \`${config.bot.prefix}unmute\` — Group unmute
-▸ \`${config.bot.prefix}tagall\` — Sab ko tag karen
-▸ \`${config.bot.prefix}groupinfo\` — Group ki poori info
-▸ \`${config.bot.prefix}resetlink\` — Group link reset
-▸ \`${config.bot.prefix}rules\` — Group rules dekhein
-▸ \`${config.bot.prefix}setrules <text>\` — Rules set karein
+▸ \`${p}kick @user\` — Remove from group
+▸ \`${p}add 923...\` — Add to group
+▸ \`${p}promote @user\` — Make admin
+▸ \`${p}demote @user\` — Remove admin
+▸ \`${p}mute\` — Mute group
+▸ \`${p}unmute\` — Unmute group
+▸ \`${p}tagall\` — Tag all members
+▸ \`${p}groupinfo\` — Group details
+▸ \`${p}resetlink\` — Reset invite link
+▸ \`${p}rules\` — Show group rules
+▸ \`${p}setrules <text>\` — Set rules
+▸ \`${p}setdp\` — Change group DP
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 👑 *OWNER ONLY*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▸ \`${config.bot.prefix}autoreact on/off\`
-▸ \`${config.bot.prefix}autoreply on/off\`
-▸ \`${config.bot.prefix}antilink on/off\`
-▸ \`${config.bot.prefix}antispam on/off\`
-▸ \`${config.bot.prefix}broadcast <msg>\`
-▸ \`${config.bot.prefix}bc <msg>\` — Short broadcast
-▸ \`${config.bot.prefix}block @user\`
-▸ \`${config.bot.prefix}unblock @user\`
+▸ \`${p}public\` — Public mode (everyone)
+▸ \`${p}private\` — Private mode (only you)
+▸ \`${p}settings\` — All features toggle
+▸ \`${p}broadcast <msg>\`
+▸ \`${p}bc <msg>\` — Short broadcast
+▸ \`${p}block @user\`
+▸ \`${p}unblock @user\`
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📢 *Join Our Channel:*
+${config.owner.channel}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 _Powered by *${config.owner.name}* | v${config.bot.version}_`;
 
@@ -150,6 +174,86 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
   async start(sock, msg) { return commands.menu(sock, msg); },
 
   // ════════════════════════════════════════════
+  //  ⚙️ SETTINGS — Toggle all features
+  // ════════════════════════════════════════════
+  async settings(sock, msg, args) {
+    const sender = msg.key.participant || msg.key.remoteJid;
+    if (!isOwner(sender)) return reply(sock, msg, '❌ Only owner can change settings.');
+
+    // .settings — show current status
+    if (!args[0]) {
+      const f = config.features;
+      const on  = '🟢 ON ';
+      const off = '🔴 OFF';
+      const text =
+`⚙️ *BOT SETTINGS*
+━━━━━━━━━━━━━━━━━━━━━
+🔰 *Mode:* ${config.botMode === 'private' ? '🔒 PRIVATE' : '🌐 PUBLIC'}
+━━━━━━━━━━━━━━━━━━━━━
+${f.autoReact  ? on : off} \`autoreact\`  — Auto React
+${f.autoReply  ? on : off} \`autoreply\`  — Auto Reply
+${f.autoRead   ? on : off} \`autoread\`   — Auto Read
+${f.antiDelete ? on : off} \`antidelete\` — Anti Delete
+${f.welcomeMsg ? on : off} \`welcome\`    — Welcome Msg
+${f.goodbyeMsg ? on : off} \`goodbye\`    — Goodbye Msg
+${f.antiSpam   ? on : off} \`antispam\`   — Anti Spam
+${f.antiLink   ? on : off} \`antilink\`   — Anti Link
+${f.antiBot    ? on : off} \`antibot\`    — Anti Bot
+━━━━━━━━━━━━━━━━━━━━━
+📌 *Usage:* \`.settings <name> on/off\`
+Example: \`.settings autoreact off\``;
+      return reply(sock, msg, text);
+    }
+
+    // .settings <feature> on/off
+    const feature = args[0].toLowerCase();
+    const val     = args[1]?.toLowerCase();
+
+    const map = {
+      autoreact:  'autoReact',
+      autoreply:  'autoReply',
+      autoread:   'autoRead',
+      antidelete: 'antiDelete',
+      welcome:    'welcomeMsg',
+      goodbye:    'goodbyeMsg',
+      antispam:   'antiSpam',
+      antilink:   'antiLink',
+      antibot:    'antiBot',
+    };
+
+    const key = map[feature];
+    if (!key) return reply(sock, msg, `❌ Unknown feature: *${feature}*\n\nAvailable: ${Object.keys(map).join(', ')}`);
+    if (!val || !['on','off'].includes(val)) return reply(sock, msg, '❌ Use: on or off\nExample: .settings autoreact off');
+
+    config.features[key] = (val === 'on');
+    await react(sock, msg, '✅');
+    return reply(sock, msg, `${val === 'on' ? '✅' : '🔴'} *${feature}* is now *${val.toUpperCase()}*`);
+  },
+
+  // ════════════════════════════════════════════
+  //  🌐 PUBLIC / 🔒 PRIVATE MODE
+  // ════════════════════════════════════════════
+  async public(sock, msg) {
+    const sender = msg.key.participant || msg.key.remoteJid;
+    if (!isOwner(sender)) return reply(sock, msg, '❌ Only owner can change bot mode.');
+    config.botMode = 'public';
+    await react(sock, msg, '🌐');
+    return reply(sock, msg,
+      `🌐 *Bot is now PUBLIC!*\n\nEveryone can use all commands.\n\n_${config.bot.name}_`
+    );
+  },
+
+  async private(sock, msg) {
+    const sender = msg.key.participant || msg.key.remoteJid;
+    if (!isOwner(sender)) return reply(sock, msg, '❌ Only owner can change bot mode.');
+    config.botMode = 'private';
+    await react(sock, msg, '🔒');
+    return reply(sock, msg,
+      `🔒 *Bot is now PRIVATE!*\n\nOnly you (owner) can use commands.\n\n_${config.bot.name}_`
+    );
+  },
+
+  // ════════════════════════════════════════════
   //  📱 SIM LOOKUP
   // ════════════════════════════════════════════
   async sim(sock, msg, args) {
@@ -157,15 +261,14 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
     const number = args[0];
     if (!number) {
       return reply(sock, msg,
-        `❌ *Number dein!*\n\n📌 *Usage:* ${config.bot.prefix}sim 03XXXXXXXXX`
+        `❌ *Number required!*\n\n📌 *Usage:* ${config.bot.prefix}sim 03XXXXXXXXX`
       );
     }
     const cleaned = number.replace(/[^0-9]/g, '');
     if (cleaned.length < 10) {
-      return reply(sock, msg, '❌ *Sahi number format dein!*\nExample: .sim 03018787786');
+      return reply(sock, msg, '❌ *Invalid number format!*\nExample: .sim 03018787786');
     }
 
-    // PERF #3: Check SIM cache
     const cacheKey = `sim_${cleaned}`;
     const cached = simCache.get(cacheKey);
     if (cached) {
@@ -174,13 +277,13 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
     }
 
     try {
-      await reply(sock, msg, '⏳ *Record dhundh raha hoon...*');
+      await reply(sock, msg, '⏳ *Searching record...*');
       const { data } = await axios.get(
         `https://sim-database-api.fly.dev/api/sim?number=${cleaned}`,
         { timeout: 10000 }
       );
       if (!data || !data.number) {
-        return reply(sock, msg, '❌ *Koi record nahi mila!*\nNumber check karein.');
+        return reply(sock, msg, '❌ *No record found!*\nPlease check the number.');
       }
       const text =
 `╔════════════════════
@@ -199,7 +302,7 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
       return reply(sock, msg, text);
     } catch (err) {
       logger.error('SIM lookup error:', err.message);
-      return reply(sock, msg, '❌ *Server se response nahi mila!*\nDobara try karein.');
+      return reply(sock, msg, '❌ *Server did not respond!*\nPlease try again.');
     }
   },
 
@@ -210,19 +313,21 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
     const start = Date.now();
     await react(sock, msg, '🏓');
     const ms = Date.now() - start;
-    await reply(sock, msg, `🏓 *Pong!*\n⚡ Speed: *${ms}ms*\n✅ Bot active hai!`);
+    await reply(sock, msg, `🏓 *Pong!*\n⚡ Speed: *${ms}ms*\n✅ Bot is active!`);
   },
 
   async alive(sock, msg) {
     const uptime = formatUptime(Date.now() - config.bot.startTime);
     const mem = process.memoryUsage();
     const memMB = (mem.heapUsed / 1024 / 1024).toFixed(1);
+    const modeTag = config.botMode === 'private' ? '🔒 PRIVATE' : '🌐 PUBLIC';
     const text = `
-✅ *${config.bot.name} ONLINE HAI!*
+✅ *${config.bot.name} IS ONLINE!*
 ━━━━━━━━━━━━━━━━━
 ⏱ *Uptime:* ${uptime}
 💾 *Memory:* ${memMB} MB
 🌐 *Status:* Active
+🔰 *Mode:* ${modeTag}
 👑 *Developer:* ${config.owner.name}
 ━━━━━━━━━━━━━━━━━`;
     await sock.sendMessage(msg.key.remoteJid, { image: { url: MENU_IMAGE }, caption: text }, { quoted: msg });
@@ -235,28 +340,27 @@ _Powered by *${config.owner.name}* | v${config.bot.version}_`;
 🧑 *Name:* ${config.owner.name}
 📞 *WhatsApp:* wa.me/${config.owner.number}
 🤖 *Bot:* ${config.bot.name} v${config.bot.version}
+📢 *Channel:* ${config.owner.channel}
 ━━━━━━━━━━━━━━━━━
-_Kisi bhi masle k liye owner se contact karein_`;
+_Want your own bot? Contact owner!_`;
     await sock.sendMessage(msg.key.remoteJid, { image: { url: MENU_IMAGE }, caption: text }, { quoted: msg });
   },
 
   // ════════════════════════════════════════════
-  //  📥 DOWNLOADS
+  //  📥 DOWNLOADS — Short aliases
   // ════════════════════════════════════════════
   async dl(sock, msg, args) {
-    if (!args[0]) return reply(sock, msg, `❌ URL dein!\nMisal: \`${config.bot.prefix}dl https://tiktok.com/...\``);
+    if (!args[0]) return reply(sock, msg, `❌ URL required!\nExample: \`${config.bot.prefix}dl https://tiktok.com/...\``);
     const url = cleanUrl(args[0]);
     await react(sock, msg, '⏳');
     const result = await smartDownload(url);
     if (!result.success) {
       await react(sock, msg, '❌');
-      return reply(sock, msg, `❌ *Download fail hua!*\n\n${result.error}`);
+      return reply(sock, msg, `❌ *Download failed!*\n\n${result.error}`);
     }
     await react(sock, msg, '✅');
     const caption = `📥 *${result.platform} Download*\n📌 ${result.title || ''}\n👤 ${result.author || ''}\n\n_${config.bot.name} | ${config.owner.name}_`.trim();
-    if (result.isImage && result.image) {
-      return sendImage(sock, msg, result.image, caption);
-    }
+    if (result.isImage && result.image) return sendImage(sock, msg, result.image, caption);
     if (result.isAudio && result.audio) {
       await reply(sock, msg, `🎵 *${result.title || 'Audio'}*\n_${config.bot.name}_`);
       return sendAudio(sock, msg, result.audio);
@@ -266,17 +370,24 @@ _Kisi bhi masle k liye owner se contact karein_`;
     }
     if (result.audio) return sendAudio(sock, msg, result.audio);
     await react(sock, msg, '❌');
-    return reply(sock, msg, '❌ Download link nahi mila.');
+    return reply(sock, msg, '❌ Download link not found.');
   },
 
+  // Short aliases — .t .i .f .tw .dm
+  async t(sock, msg, args)  { return commands.dl(sock, msg, args); },  // TikTok
+  async i(sock, msg, args)  { return commands.dl(sock, msg, args); },  // Instagram
+  async f(sock, msg, args)  { return commands.dl(sock, msg, args); },  // Facebook
+  async tw(sock, msg, args) { return commands.dl(sock, msg, args); },  // Twitter
+  async dm(sock, msg, args) { return commands.dl(sock, msg, args); },  // Dailymotion
+
+  // Long aliases still work
   async tiktok(sock, msg, args)  { return commands.dl(sock, msg, args); },
   async ig(sock, msg, args)      { return commands.dl(sock, msg, args); },
   async fb(sock, msg, args)      { return commands.dl(sock, msg, args); },
   async twitter(sock, msg, args) { return commands.dl(sock, msg, args); },
-  async dm(sock, msg, args)      { return commands.dl(sock, msg, args); },
 
-  async ytmp3(sock, msg, args) {
-    if (!args[0]) return reply(sock, msg, `❌ YouTube link dein!\nMisal: \`${config.bot.prefix}ytmp3 https://youtube.com/...\``);
+  async y(sock, msg, args) {  // Short alias for ytmp3
+    if (!args[0]) return reply(sock, msg, `❌ YouTube link required!\nExample: \`${config.bot.prefix}y https://youtube.com/...\``);
     const url = cleanUrl(args[0]);
     await react(sock, msg, '⏳');
     const result = await downloadYouTube(url, 'audio');
@@ -288,17 +399,74 @@ _Kisi bhi masle k liye owner se contact karein_`;
     await reply(sock, msg, `🎵 *${result.title}*\n_Downloading..._`);
     return sendAudio(sock, msg, result.audio);
   },
+  async ytmp3(sock, msg, args) { return commands.y(sock, msg, args); },
 
   // ════════════════════════════════════════════
-  //  🌤️ CMD #1 — WEATHER
+  //  👁️ VIEW ONCE SAVER
+  // ════════════════════════════════════════════
+  async view(sock, msg) {
+    const jid = msg.key.remoteJid;
+    const ctx = msg.message?.extendedTextMessage?.contextInfo;
+
+    if (!ctx?.quotedMessage) {
+      return reply(sock, msg,
+        `❌ *Reply to a view-once image/video!*\n\n📌 How to use:\n1. Reply to a view-once message\n2. Type \`${config.bot.prefix}view\``
+      );
+    }
+
+    const quotedType = Object.keys(ctx.quotedMessage)[0];
+    const viewOnceTypes = ['imageMessage', 'videoMessage', 'audioMessage'];
+    if (!viewOnceTypes.includes(quotedType)) {
+      return reply(sock, msg, '❌ *Only images, videos, or audio supported.*');
+    }
+
+    await react(sock, msg, '⏳');
+
+    try {
+      const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+      const quotedMsg = {
+        key: { remoteJid: jid, id: ctx.stanzaId, fromMe: false, participant: ctx.participant },
+        message: ctx.quotedMessage,
+      };
+
+      const buffer = await downloadMediaMessage(quotedMsg, 'buffer', {});
+      const ownerTag = `\n\n📞 *Contact:* wa.me/${config.owner.number}\n💬 *Want your own bot? Contact:* wa.me/${config.owner.number}`;
+
+      if (quotedType === 'imageMessage') {
+        await sock.sendMessage(jid, {
+          image: buffer,
+          caption: `🖼️ *View Once Saved!*${ownerTag}`,
+        }, { quoted: msg });
+      } else if (quotedType === 'videoMessage') {
+        await sock.sendMessage(jid, {
+          video: buffer,
+          caption: `🎥 *View Once Saved!*${ownerTag}`,
+          mimetype: 'video/mp4',
+        }, { quoted: msg });
+      } else {
+        await sock.sendMessage(jid, {
+          audio: buffer,
+          mimetype: 'audio/mpeg',
+          ptt: false,
+        }, { quoted: msg });
+      }
+      await react(sock, msg, '✅');
+    } catch (err) {
+      await react(sock, msg, '❌');
+      logger.error('View error:', err.message);
+      return reply(sock, msg, '❌ Could not save media. Please try again.');
+    }
+  },
+
+  // ════════════════════════════════════════════
+  //  🌤️ WEATHER
   // ════════════════════════════════════════════
   async weather(sock, msg, args) {
     const city = args.join(' ').trim();
-    if (!city) return reply(sock, msg, `❌ *City ka naam dein!*\n\n📌 Misal: ${config.bot.prefix}weather Karachi`);
+    if (!city) return reply(sock, msg, `❌ *City name required!*\n\n📌 Example: ${config.bot.prefix}weather Karachi`);
 
     await react(sock, msg, '🌤️');
 
-    // PERF #3: weather cache
     const cacheKey = `weather_${city.toLowerCase()}`;
     let data = weatherCache.get(cacheKey);
 
@@ -312,7 +480,7 @@ _Kisi bhi masle k liye owner se contact karein_`;
         weatherCache.set(cacheKey, data);
       } catch (err) {
         await react(sock, msg, '❌');
-        return reply(sock, msg, '❌ *Weather data nahi mila.*\nCity ka naam check karein ya dobara try karein.');
+        return reply(sock, msg, '❌ *Weather data not found.*\nCheck city name and try again.');
       }
     }
 
@@ -340,24 +508,22 @@ _Kisi bhi masle k liye owner se contact karein_`;
       return reply(sock, msg, text);
     } catch (err) {
       await react(sock, msg, '❌');
-      return reply(sock, msg, '❌ Weather data parse nahi ho saka. Dobara try karein.');
+      return reply(sock, msg, '❌ Weather data parse error. Try again.');
     }
   },
 
   // ════════════════════════════════════════════
-  //  🧮 CMD #2 — CALCULATOR
+  //  🧮 CALCULATOR
   // ════════════════════════════════════════════
   async calc(sock, msg, args) {
     const expr = args.join(' ').trim();
-    if (!expr) return reply(sock, msg, `❌ *Expression dein!*\n\n📌 Misal: ${config.bot.prefix}calc 20*5+100`);
+    if (!expr) return reply(sock, msg, `❌ *Expression required!*\n\n📌 Example: ${config.bot.prefix}calc 20*5+100`);
 
-    // Strict whitelist — only digits, operators, parens, dot, percent, spaces
     if (!/^[0-9+\-*/.()%\s]+$/.test(expr)) {
-      return reply(sock, msg, '❌ *Galat characters!*\nSirf: 0-9, +, -, *, /, (, ), ., %');
+      return reply(sock, msg, '❌ *Invalid characters!*\nAllowed: 0-9, +, -, *, /, (, ), ., %');
     }
 
-    // Guard against empty-after-strip tricks like "  "
-    if (!expr.replace(/\s/g, '')) return reply(sock, msg, '❌ Kuch toh likhein!');
+    if (!expr.replace(/\s/g, '')) return reply(sock, msg, '❌ Please enter something!');
 
     try {
       // eslint-disable-next-line no-new-func
@@ -366,17 +532,16 @@ _Kisi bhi masle k liye owner se contact karein_`;
       const formatted = Number.isInteger(result) ? result : parseFloat(result.toFixed(8));
       return reply(sock, msg, `🧮 *Calculator*\n\n📝 Expression: \`${expr}\`\n✅ Result: *${formatted}*`);
     } catch (_) {
-      return reply(sock, msg, '❌ Expression galat hai. Dobara check karein.\n\nMisal: .calc 20*5+100');
+      return reply(sock, msg, '❌ Invalid expression. Please check.\n\nExample: .calc 20*5+100');
     }
   },
 
   // ════════════════════════════════════════════
-  //  📰 CMD #3 — NEWS
+  //  📰 NEWS
   // ════════════════════════════════════════════
   async news(sock, msg) {
     await react(sock, msg, '📰');
 
-    // PERF #3: news cache
     const cacheKey = 'news_bbc_urdu';
     let headlines = newsCache.get(cacheKey);
 
@@ -391,7 +556,7 @@ _Kisi bhi masle k liye owner se contact karein_`;
         newsCache.set(cacheKey, headlines);
       } catch (err) {
         await react(sock, msg, '❌');
-        return reply(sock, msg, '❌ *News nahi mili.*\nDobara try karein.');
+        return reply(sock, msg, '❌ *News not available.*\nPlease try again.');
       }
     }
 
@@ -402,7 +567,7 @@ _Kisi bhi masle k liye owner se contact karein_`;
   },
 
   // ════════════════════════════════════════════
-  //  🎨 CMD #4 — STICKER (image/video → sticker)
+  //  🎨 STICKER (image/video → sticker)
   // ════════════════════════════════════════════
   async sticker(sock, msg) {
     const jid = msg.key.remoteJid;
@@ -410,13 +575,13 @@ _Kisi bhi masle k liye owner se contact karein_`;
 
     if (!ctx?.quotedMessage) {
       return reply(sock, msg,
-        `❌ *Kisi image ya video ko reply karein!*\n\n📌 Misal:\n1. Kisi image ko reply karein\n2. \`${config.bot.prefix}sticker\` likhein`
+        `❌ *Reply to an image or video!*\n\n📌 How to use:\n1. Reply to an image\n2. Type \`${config.bot.prefix}sticker\``
       );
     }
 
     const quotedType = Object.keys(ctx.quotedMessage)[0];
     if (!['imageMessage', 'videoMessage'].includes(quotedType)) {
-      return reply(sock, msg, '❌ *Sirf image ya video sticker banta hai.*\nSticker se image k liye: .toimg');
+      return reply(sock, msg, '❌ *Only image or video can become sticker.*\nSticker to image: .toimg');
     }
 
     await react(sock, msg, '⏳');
@@ -443,27 +608,27 @@ _Kisi bhi masle k liye owner se contact karein_`;
       await react(sock, msg, '❌');
       logger.error('Sticker error:', err.message);
       await reply(sock, msg,
-        '❌ *Sticker nahi bana.*\n\n⚠️ Server mein sharp/ffmpeg hona chahiye.\n' +
-        'Railway par kaam karta hai — Hostinger shared hosting par nahi.\n\n' +
-        'Solution: VPS use karein ya Railway free tier.'
+        '❌ *Sticker creation failed.*\n\n⚠️ Server needs sharp/ffmpeg.\n' +
+        'Works on Railway — may not work on shared hosting.\n\n' +
+        'Solution: Use Railway or a VPS.'
       );
     }
   },
 
   // ════════════════════════════════════════════
-  //  🖼️ CMD #5 — TOIMG (sticker → image)
+  //  🖼️ TOIMG (sticker → image)
   // ════════════════════════════════════════════
   async toimg(sock, msg) {
     const jid = msg.key.remoteJid;
     const ctx = msg.message?.extendedTextMessage?.contextInfo;
 
     if (!ctx?.quotedMessage) {
-      return reply(sock, msg, `❌ *Kisi sticker ko reply karein!*\n\n📌 Misal: Sticker ko reply karein aur \`${config.bot.prefix}toimg\` likhein`);
+      return reply(sock, msg, `❌ *Reply to a sticker!*\n\n📌 Reply to sticker and type \`${config.bot.prefix}toimg\``);
     }
 
     const quotedType = Object.keys(ctx.quotedMessage)[0];
     if (quotedType !== 'stickerMessage') {
-      return reply(sock, msg, '❌ *Sirf sticker ko reply karein .toimg k liye.*\nImage se sticker k liye: .sticker');
+      return reply(sock, msg, '❌ *Only reply to a sticker for .toimg.*\nImage to sticker: .sticker');
     }
 
     await react(sock, msg, '⏳');
@@ -485,16 +650,16 @@ _Kisi bhi masle k liye owner se contact karein_`;
     } catch (err) {
       await react(sock, msg, '❌');
       logger.error('toimg error:', err.message);
-      return reply(sock, msg, '❌ Image convert nahi ho saka. Dobara try karein.');
+      return reply(sock, msg, '❌ Image conversion failed. Please try again.');
     }
   },
 
   // ════════════════════════════════════════════
-  //  👥 CMD #6 — GROUPINFO (enhanced + typo fix)
+  //  👥 GROUPINFO
   // ════════════════════════════════════════════
   async groupinfo(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Yeh command sirf groups mein kaam karta hai.*');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *This command only works in groups.*');
 
     try {
       const meta   = await sock.groupMetadata(jid);
@@ -510,26 +675,76 @@ _Kisi bhi masle k liye owner se contact karein_`;
       const text =
 `👥 *GROUP INFORMATION*
 ━━━━━━━━━━━━━━━━━
-📛 *Naam:* ${meta.subject}
+📛 *Name:* ${meta.subject}
 👤 *Members:* ${meta.participants.length}
 👑 *Admins (${admins.length}):*
 ${adminList}
-📅 *Bana:* ${new Date(meta.creation * 1000).toLocaleDateString('ur-PK')}
+📅 *Created:* ${new Date(meta.creation * 1000).toLocaleDateString('en-PK')}
 📝 *Description:*
-${meta.desc || 'Koi description nahi'}${inviteLink}
+${meta.desc || 'No description'}${inviteLink}
 ━━━━━━━━━━━━━━━━━
 _${config.bot.name}_`;
 
       const mentions = admins.map(p => p.id);
       await sock.sendMessage(jid, { text, mentions }, { quoted: msg });
-    } catch (_) { await reply(sock, msg, '❌ Group info nahi mili. Admin permission chahiye.'); }
+    } catch (_) { await reply(sock, msg, '❌ Group info not found. Admin permission required.'); }
   },
 
-  // Alias — fix the .grupinfo typo that existed in older versions
   async grupinfo(sock, msg) { return commands.groupinfo(sock, msg); },
 
   // ════════════════════════════════════════════
-  //  🆔 CMD #7 — ID
+  //  🖼️ SETDP — Change group or personal DP
+  // ════════════════════════════════════════════
+  async setdp(sock, msg) {
+    const jid = msg.key.remoteJid;
+    const sender = msg.key.participant || msg.key.remoteJid;
+    const ctx = msg.message?.extendedTextMessage?.contextInfo;
+
+    if (!ctx?.quotedMessage) {
+      return reply(sock, msg,
+        `❌ *Reply to an image!*\n\n📌 How to use:\n1. Reply to an image\n2. Type \`${config.bot.prefix}setdp\`\n\n_Works for group DP (admin only) or your personal DP_`
+      );
+    }
+
+    const quotedType = Object.keys(ctx.quotedMessage)[0];
+    if (quotedType !== 'imageMessage') {
+      return reply(sock, msg, '❌ *Only image can be used for DP.*');
+    }
+
+    // Group DP — requires admin
+    if (jid.endsWith('@g.us')) {
+      try {
+        const meta = await sock.groupMetadata(jid);
+        const isAdmin = meta.participants.some(p => p.id === sender && p.admin);
+        if (!isAdmin && !isOwner(sender)) {
+          return reply(sock, msg, '❌ *Only group admins can change group DP.*');
+        }
+      } catch (_) { return reply(sock, msg, '❌ Admin check failed.'); }
+    }
+
+    await react(sock, msg, '⏳');
+
+    try {
+      const { downloadMediaMessage } = require('@whiskeysockets/baileys');
+      const quotedMsg = {
+        key: { remoteJid: jid, id: ctx.stanzaId, fromMe: false, participant: ctx.participant },
+        message: ctx.quotedMessage,
+      };
+
+      const buffer = await downloadMediaMessage(quotedMsg, 'buffer', {});
+      const target = jid.endsWith('@g.us') ? jid : sender;
+      await sock.updateProfilePicture(target, buffer);
+      await react(sock, msg, '✅');
+      return reply(sock, msg, `✅ *DP updated successfully!*\n_${config.bot.name}_`);
+    } catch (err) {
+      await react(sock, msg, '❌');
+      logger.error('setdp error:', err.message);
+      return reply(sock, msg, '❌ DP update failed. Make sure bot has permission.');
+    }
+  },
+
+  // ════════════════════════════════════════════
+  //  🆔 ID
   // ════════════════════════════════════════════
   async id(sock, msg) {
     const sender = msg.key.participant || msg.key.remoteJid;
@@ -546,38 +761,37 @@ _${config.bot.name}_`;
   },
 
   // ════════════════════════════════════════════
-  //  🔄 CMD #8 — RESETLINK (admin only)
+  //  🔄 RESETLINK (admin only)
   // ════════════════════════════════════════════
   async resetlink(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Sirf groups mein kaam karta hai.*');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Only works in groups.*');
 
-    // Check admin
     try {
       const meta   = await sock.groupMetadata(jid);
       const sender = msg.key.participant || msg.key.remoteJid;
       const isAdmin = meta.participants.some(p => p.id === sender && p.admin);
       if (!isAdmin && !isOwner(sender)) {
-        return reply(sock, msg, '❌ *Sirf group admins link reset kar sakte hain.*');
+        return reply(sock, msg, '❌ *Only group admins can reset the link.*');
       }
-    } catch (_) { return reply(sock, msg, '❌ Admin check fail hua.'); }
+    } catch (_) { return reply(sock, msg, '❌ Admin check failed.'); }
 
     try {
       const newCode = await sock.groupRevokeInvite(jid);
       return reply(sock, msg,
-        `✅ *Group link reset ho gaya!*\n\n🔗 *New Link:*\nhttps://chat.whatsapp.com/${newCode}\n\n_Purana link kaam nahi karega._`
+        `✅ *Group link has been reset!*\n\n🔗 *New Link:*\nhttps://chat.whatsapp.com/${newCode}\n\n_Old link no longer works._`
       );
     } catch (_) {
-      return reply(sock, msg, '❌ Link reset fail hua. Kya main admin hoon?');
+      return reply(sock, msg, '❌ Reset failed. Am I an admin?');
     }
   },
 
   // ════════════════════════════════════════════
-  //  📋 CMD #9 — RULES (show group rules)
+  //  📋 RULES
   // ════════════════════════════════════════════
   async rules(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Sirf groups mein kaam karta hai.*');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Only works in groups.*');
 
     const allRules = loadRules();
     const groupRules = allRules[jid];
@@ -585,8 +799,8 @@ _${config.bot.name}_`;
     if (!groupRules) {
       return reply(sock, msg,
         `📋 *Group Rules*\n━━━━━━━━━━━━━━━\n` +
-        `⚠️ Is group k liye koi rules set nahi hain.\n\n` +
-        `Admin rules set karne k liye:\n\`${config.bot.prefix}setrules <rules text>\``
+        `⚠️ No rules set for this group yet.\n\n` +
+        `Admin can set rules:\n\`${config.bot.prefix}setrules <rules text>\``
       );
     }
 
@@ -594,26 +808,25 @@ _${config.bot.name}_`;
   },
 
   // ════════════════════════════════════════════
-  //  ✏️ CMD #10 — SETRULES (admin only)
+  //  ✏️ SETRULES (admin only)
   // ════════════════════════════════════════════
   async setrules(sock, msg, args) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Sirf groups mein kaam karta hai.*');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ *Only works in groups.*');
 
-    // Check admin
     try {
       const meta   = await sock.groupMetadata(jid);
       const sender = msg.key.participant || msg.key.remoteJid;
       const isAdmin = meta.participants.some(p => p.id === sender && p.admin);
       if (!isAdmin && !isOwner(sender)) {
-        return reply(sock, msg, '❌ *Sirf group admins rules set kar sakte hain.*');
+        return reply(sock, msg, '❌ *Only group admins can set rules.*');
       }
-    } catch (_) { return reply(sock, msg, '❌ Admin check fail hua.'); }
+    } catch (_) { return reply(sock, msg, '❌ Admin check failed.'); }
 
     const rulesText = args.join(' ').trim();
     if (!rulesText) {
       return reply(sock, msg,
-        `❌ *Rules text dein!*\n\n📌 Misal:\n\`${config.bot.prefix}setrules 1. Respect karein\n2. Spam mat karein\n3. Links allowed nahi\``
+        `❌ *Rules text required!*\n\n📌 Example:\n\`${config.bot.prefix}setrules 1. Be respectful\n2. No spam\n3. No links\``
       );
     }
 
@@ -621,7 +834,7 @@ _${config.bot.name}_`;
     allRules[jid] = rulesText;
     saveRules(allRules);
 
-    return reply(sock, msg, `✅ *Group rules set ho gaye!*\n\nDekhne k liye: \`${config.bot.prefix}rules\``);
+    return reply(sock, msg, `✅ *Group rules have been set!*\n\nTo view: \`${config.bot.prefix}rules\``);
   },
 
   // ════════════════════════════════════════════
@@ -629,48 +842,48 @@ _${config.bot.name}_`;
   // ════════════════════════════════════════════
   async joke(sock, msg) {
     const jokes = [
-      '🤣 Ek banda doctor ke paas gaya...\nDoctor: Kya hua?\nBanda: Sab theek hai, bas check karna tha!\nDoctor: Toh mera fee kya hua? 😂',
-      '😂 Teacher: 2+2 kitna hota hai?\nStudent: Sir, depends karta hai... exam mein 5 bhi ho sakta hai!',
-      '🤣 Biwi: Tum mujhe bhool gaye ho!\nShauhar: Nahi jaan, main try kar raha hoon! 😅',
-      '😂 Dost: Yaar salary mili toh party dena!\nMain: Haan zaroor, agli salary mein! 💸',
-      '🤣 Exam hall mein:\nStudent 1: Yaar copy karne do!\nStudent 2: Mere paas bhi kuch nahi!\nStudent 1: Phir bhi... ek dusre ko dekh ke confidence toh milega! 😂',
+      '🤣 A man went to the doctor...\nDoctor: What\'s wrong?\nMan: Nothing, just wanted to check!\nDoctor: Then what about my fee? 😂',
+      '😂 Teacher: What is 2+2?\nStudent: Depends sir... in exams it could be 5!',
+      '🤣 Wife: You\'ve forgotten me!\nHusband: No dear, I\'m still trying! 😅',
+      '😂 Friend: Give a party when you get salary!\nMe: Sure, next salary! 💸',
+      '🤣 Student 1: Let me copy!\nStudent 2: I have nothing either!\nStudent 1: Still... at least we\'ll feel confident! 😂',
     ];
     await reply(sock, msg, jokes[Math.floor(Math.random() * jokes.length)]);
   },
 
   async quote(sock, msg) {
     const quotes = [
-      '💪 *"Mushkilaat insaan ko torti nahi, balki banati hain."*\n— Sahil Hacker',
-      '🌟 *"Kamyabi ka raasta mehnат se hota hai, shortcut se nahi."*',
-      '🔥 *"Jo uthta hai gir ke, woh hi asal mein jeeta hai."*',
-      '⚡ *"Kal ka intezaar mat karo, aaj hi shuru karo."*',
-      '💡 *"Ilm woh roshni hai jo kabhi nahi bujhti."*',
-      '🎯 *"Apna target khud set karo, doosron ki raah mat dekho."*',
-      '🌈 *"Toofan ke baad hi noor aata hai."*',
+      '💪 *"Difficulties don\'t break you, they build you."*\n— Sahil Hacker',
+      '🌟 *"The path to success goes through hard work, not shortcuts."*',
+      '🔥 *"The one who rises after falling is the one who truly wins."*',
+      '⚡ *"Don\'t wait for tomorrow, start today."*',
+      '💡 *"Knowledge is a light that never goes out."*',
+      '🎯 *"Set your own targets, don\'t follow others\' path."*',
+      '🌈 *"After every storm comes the light."*',
     ];
     await reply(sock, msg, quotes[Math.floor(Math.random() * quotes.length)]);
   },
 
   async flip(sock, msg) {
-    const result = Math.random() < 0.5 ? '🪙 *HEADS* (Chitt)' : '🪙 *TAILS* (Patt)';
-    await reply(sock, msg, `🎲 Coin flip ka natija:\n\n${result}`);
+    const result = Math.random() < 0.5 ? '🪙 *HEADS*' : '🪙 *TAILS*';
+    await reply(sock, msg, `🎲 Coin flip result:\n\n${result}`);
   },
 
   async dice(sock, msg) {
     const num = Math.floor(Math.random() * 6) + 1;
     const emojis = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣'];
-    await reply(sock, msg, `🎲 Pasa giraya!\n\nNatija: ${emojis[num-1]} *${num}*`);
+    await reply(sock, msg, `🎲 Dice rolled!\n\nResult: ${emojis[num-1]} *${num}*`);
   },
 
   async fact(sock, msg) {
     const facts = [
-      '🧠 Insaan ka dimaag 70% paani se bana hai.',
-      '🐙 Octopus ke 3 dil hote hain!',
-      '🌍 Duniya mein har second 100 bijliyan girti hain.',
-      '🦋 Titli apni aankhon se rang nahi dekhti.',
-      '🍯 Shahad kabhi kharab nahi hota — 3000 saal purana shahad bhi kha sakte hain!',
-      '🐘 Hathi ek insaan ki awaaz lifetime yaad rakhta hai.',
-      '🌙 Chaand par ek din 29 Earth days ka hota hai.',
+      '🧠 The human brain is 70% water.',
+      '🐙 An octopus has 3 hearts!',
+      '🌍 100 lightning bolts strike Earth every second.',
+      '🦋 Butterflies taste with their feet.',
+      '🍯 Honey never expires — 3000 year old honey is still edible!',
+      '🐘 Elephants remember a human voice for a lifetime.',
+      '🌙 One day on the Moon equals 29 Earth days.',
     ];
     await reply(sock, msg, `💡 *Random Fact:*\n\n${facts[Math.floor(Math.random() * facts.length)]}`);
   },
@@ -680,75 +893,75 @@ _${config.bot.name}_`;
   // ════════════════════════════════════════════
   async kick(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Yeh command sirf groups mein kaam karta hai.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ This command only works in groups.');
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!mentioned.length) return reply(sock, msg, '❌ Kisi user ko mention karein (@tag).');
+    if (!mentioned.length) return reply(sock, msg, '❌ Mention a user to kick (@tag).');
     try {
       await sock.groupParticipantsUpdate(jid, mentioned, 'remove');
-      await reply(sock, msg, `✅ *${mentioned.length}* user(s) ko group se nikal diya!`);
-    } catch (_) { await reply(sock, msg, '❌ Fail hua. Kya main admin hoon?'); }
+      await reply(sock, msg, `✅ *${mentioned.length}* user(s) removed from group!`);
+    } catch (_) { await reply(sock, msg, '❌ Failed. Am I an admin?'); }
   },
 
   async add(sock, msg, args) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     const number = args[0]?.replace(/[^0-9]/g, '');
-    if (!number) return reply(sock, msg, `❌ Misal: \`${config.bot.prefix}add 923001234567\``);
+    if (!number) return reply(sock, msg, `❌ Example: \`${config.bot.prefix}add 923001234567\``);
     try {
       await sock.groupParticipantsUpdate(jid, [`${number}@s.whatsapp.net`], 'add');
-      await reply(sock, msg, `✅ *+${number}* ko group mein add kar diya!`);
-    } catch (_) { await reply(sock, msg, '❌ Fail hua. Number WhatsApp par hona chahiye.'); }
+      await reply(sock, msg, `✅ *+${number}* added to group!`);
+    } catch (_) { await reply(sock, msg, '❌ Failed. Number must be on WhatsApp.'); }
   },
 
   async promote(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!mentioned.length) return reply(sock, msg, '❌ User ko mention karein.');
+    if (!mentioned.length) return reply(sock, msg, '❌ Mention a user.');
     try {
       await sock.groupParticipantsUpdate(jid, mentioned, 'promote');
-      await reply(sock, msg, '✅ User ko admin bana diya!');
-    } catch (_) { await reply(sock, msg, '❌ Fail. Main admin hoon?'); }
+      await reply(sock, msg, '✅ User promoted to admin!');
+    } catch (_) { await reply(sock, msg, '❌ Failed. Am I an admin?'); }
   },
 
   async demote(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!mentioned.length) return reply(sock, msg, '❌ User ko mention karein.');
+    if (!mentioned.length) return reply(sock, msg, '❌ Mention a user.');
     try {
       await sock.groupParticipantsUpdate(jid, mentioned, 'demote');
-      await reply(sock, msg, '✅ User ko admin se hata diya!');
-    } catch (_) { await reply(sock, msg, '❌ Fail. Main admin hoon?'); }
+      await reply(sock, msg, '✅ User removed from admin!');
+    } catch (_) { await reply(sock, msg, '❌ Failed. Am I an admin?'); }
   },
 
   async mute(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     try {
       await sock.groupSettingUpdate(jid, 'announcement');
-      await reply(sock, msg, '🔇 Group mute kar diya! Sirf admins send kar sakte hain.');
-    } catch (_) { await reply(sock, msg, '❌ Fail. Kya main admin hoon?'); }
+      await reply(sock, msg, '🔇 Group muted! Only admins can send messages.');
+    } catch (_) { await reply(sock, msg, '❌ Failed. Am I an admin?'); }
   },
 
   async unmute(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     try {
       await sock.groupSettingUpdate(jid, 'not_announcement');
-      await reply(sock, msg, '🔊 Group unmute kar diya! Sab send kar sakte hain.');
-    } catch (_) { await reply(sock, msg, '❌ Fail. Kya main admin hoon?'); }
+      await reply(sock, msg, '🔊 Group unmuted! Everyone can send messages.');
+    } catch (_) { await reply(sock, msg, '❌ Failed. Am I an admin?'); }
   },
 
   async tagall(sock, msg) {
     const jid = msg.key.remoteJid;
-    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Sirf groups mein.');
+    if (!jid.endsWith('@g.us')) return reply(sock, msg, '❌ Only in groups.');
     try {
       const meta    = await sock.groupMetadata(jid);
       const members = meta.participants.map(p => p.id);
       const mentions = members.map(m => `@${m.split('@')[0]}`).join(' ');
-      await sock.sendMessage(jid, { text: `📢 *Sab Members:*\n\n${mentions}`, mentions: members }, { quoted: msg });
-    } catch (_) { await reply(sock, msg, '❌ Fail. Admin permission chahiye.'); }
+      await sock.sendMessage(jid, { text: `📢 *All Members:*\n\n${mentions}`, mentions: members }, { quoted: msg });
+    } catch (_) { await reply(sock, msg, '❌ Failed. Admin permission required.'); }
   },
 
   // ════════════════════════════════════════════
@@ -756,45 +969,45 @@ _${config.bot.name}_`;
   // ════════════════════════════════════════════
   async autoreact(sock, msg, args) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Yeh sirf owner k liye hai.');
+      return reply(sock, msg, '❌ Owner only.');
     const val = args[0]?.toLowerCase();
-    if (val === 'on')  { config.features.autoReact = true;  return reply(sock, msg, '✅ Auto React *ON* kar diya!'); }
-    if (val === 'off') { config.features.autoReact = false; return reply(sock, msg, '🔴 Auto React *OFF* kar diya!'); }
-    return reply(sock, msg, `Auto React filhal: *${config.features.autoReact ? 'ON ✅' : 'OFF 🔴'}*`);
+    if (val === 'on')  { config.features.autoReact = true;  return reply(sock, msg, '✅ Auto React *ON*!'); }
+    if (val === 'off') { config.features.autoReact = false; return reply(sock, msg, '🔴 Auto React *OFF*!'); }
+    return reply(sock, msg, `Auto React: *${config.features.autoReact ? 'ON ✅' : 'OFF 🔴'}*`);
   },
 
   async autoreply(sock, msg, args) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Yeh sirf owner k liye hai.');
+      return reply(sock, msg, '❌ Owner only.');
     const val = args[0]?.toLowerCase();
-    if (val === 'on')  { config.features.autoReply = true;  return reply(sock, msg, '✅ Auto Reply *ON* kar diya!'); }
-    if (val === 'off') { config.features.autoReply = false; return reply(sock, msg, '🔴 Auto Reply *OFF* kar diya!'); }
-    return reply(sock, msg, `Auto Reply filhal: *${config.features.autoReply ? 'ON ✅' : 'OFF 🔴'}*`);
+    if (val === 'on')  { config.features.autoReply = true;  return reply(sock, msg, '✅ Auto Reply *ON*!'); }
+    if (val === 'off') { config.features.autoReply = false; return reply(sock, msg, '🔴 Auto Reply *OFF*!'); }
+    return reply(sock, msg, `Auto Reply: *${config.features.autoReply ? 'ON ✅' : 'OFF 🔴'}*`);
   },
 
   async antilink(sock, msg, args) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Sirf owner k liye.');
+      return reply(sock, msg, '❌ Owner only.');
     const val = args[0]?.toLowerCase();
-    if (val === 'on')  { config.features.antiLink = true;  return reply(sock, msg, '✅ Anti-Link *ON*! Groups mein links ban hain.'); }
-    if (val === 'off') { config.features.antiLink = false; return reply(sock, msg, '🔴 Anti-Link *OFF* kar diya.'); }
-    return reply(sock, msg, `Anti-Link filhal: *${config.features.antiLink ? 'ON ✅' : 'OFF 🔴'}*`);
+    if (val === 'on')  { config.features.antiLink = true;  return reply(sock, msg, '✅ Anti-Link *ON*! Links banned in groups.'); }
+    if (val === 'off') { config.features.antiLink = false; return reply(sock, msg, '🔴 Anti-Link *OFF*.'); }
+    return reply(sock, msg, `Anti-Link: *${config.features.antiLink ? 'ON ✅' : 'OFF 🔴'}*`);
   },
 
   async antispam(sock, msg, args) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Sirf owner k liye.');
+      return reply(sock, msg, '❌ Owner only.');
     const val = args[0]?.toLowerCase();
     if (val === 'on')  { config.features.antiSpam = true;  return reply(sock, msg, '✅ Anti-Spam *ON*!'); }
     if (val === 'off') { config.features.antiSpam = false; return reply(sock, msg, '🔴 Anti-Spam *OFF*.'); }
-    return reply(sock, msg, `Anti-Spam filhal: *${config.features.antiSpam ? 'ON ✅' : 'OFF 🔴'}*`);
+    return reply(sock, msg, `Anti-Spam: *${config.features.antiSpam ? 'ON ✅' : 'OFF 🔴'}*`);
   },
 
   async broadcast(sock, msg, args) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Sirf owner k liye.');
+      return reply(sock, msg, '❌ Owner only.');
     const text = args.join(' ');
-    if (!text) return reply(sock, msg, '❌ Message dein.');
+    if (!text) return reply(sock, msg, '❌ Message required.');
     const chats = await sock.groupFetchAllParticipating();
     let count = 0;
     for (const jid of Object.keys(chats)) {
@@ -804,40 +1017,39 @@ _${config.bot.name}_`;
         await sleep(1200);
       } catch (_) {}
     }
-    return reply(sock, msg, `✅ Broadcast *${count}* groups ko bhej diya!`);
+    return reply(sock, msg, `✅ Broadcast sent to *${count}* groups!`);
   },
 
   async bc(sock, msg, args) { return commands.broadcast(sock, msg, args); },
 
   async block(sock, msg) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Sirf owner k liye.');
+      return reply(sock, msg, '❌ Owner only.');
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!mentioned.length) return reply(sock, msg, '❌ User ko mention karein.');
+    if (!mentioned.length) return reply(sock, msg, '❌ Mention a user.');
     for (const jid of mentioned) {
       try { await sock.updateBlockStatus(jid, 'block'); } catch (_) {}
     }
-    await reply(sock, msg, `✅ *${mentioned.length}* user(s) block kar diye!`);
+    await reply(sock, msg, `✅ *${mentioned.length}* user(s) blocked!`);
   },
 
   async unblock(sock, msg) {
     if (!isOwner(msg.key.participant || msg.key.remoteJid))
-      return reply(sock, msg, '❌ Sirf owner k liye.');
+      return reply(sock, msg, '❌ Owner only.');
     const mentioned = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid || [];
-    if (!mentioned.length) return reply(sock, msg, '❌ User ko mention karein.');
+    if (!mentioned.length) return reply(sock, msg, '❌ Mention a user.');
     for (const jid of mentioned) {
       try { await sock.updateBlockStatus(jid, 'unblock'); } catch (_) {}
     }
-    await reply(sock, msg, `✅ *${mentioned.length}* user(s) unblock kar diye!`);
+    await reply(sock, msg, `✅ *${mentioned.length}* user(s) unblocked!`);
   },
 };
 
 // ════════════════════════════════════════════
-//  🛡️ Anti-Spam Tracker (BUG #3 — memory leak fix)
+//  🛡️ Anti-Spam Tracker (BUG #3 fix)
 // ════════════════════════════════════════════
 const spamTracker = new Map();
 
-// BUG #3 FIX: Clean up entries older than timeWindow every 5 minutes
 setInterval(() => {
   const now = Date.now();
   let deleted = 0;
@@ -848,7 +1060,7 @@ setInterval(() => {
     }
   }
   if (deleted > 0) logger.info(`spamTracker cleanup: ${deleted} entries removed`);
-}, 5 * 60 * 1000).unref(); // .unref() so it won't block process exit
+}, 5 * 60 * 1000).unref();
 
 function checkSpam(jid) {
   const now  = Date.now();
@@ -875,10 +1087,14 @@ async function handleCommand(sock, msg) {
     const [rawCmd, ...args] = body.slice(config.bot.prefix.length).trim().split(/\s+/);
     const cmd = rawCmd.toLowerCase();
 
-    // Spam check
     const senderJid = msg.key.participant || msg.key.remoteJid;
+
+    // Mode guard — block non-owners in private mode
+    if (!isBotAllowed(senderJid)) return;
+
+    // Spam check
     if (config.features.antiSpam && !isOwner(senderJid) && checkSpam(senderJid)) {
-      return reply(sock, msg, '⚠️ Aap bahut zyada messages bhej rahe hain! Thoda ruko.');
+      return reply(sock, msg, '⚠️ You are sending too many messages! Please slow down.');
     }
 
     if (commands[cmd]) {
@@ -887,8 +1103,8 @@ async function handleCommand(sock, msg) {
     }
   } catch (err) {
     logger.error('Command error:', err.message);
-    try { await reply(sock, msg, `❌ Kuch masla hua: ${err.message}`); } catch (_) {}
+    try { await reply(sock, msg, `❌ Error: ${err.message}`); } catch (_) {}
   }
 }
 
-module.exports = { handleCommand, isOwner, react, reply };
+module.exports = { handleCommand, isOwner, react, reply, pickEmoji };
