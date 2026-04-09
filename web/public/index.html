@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ur" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAHIL 804 Bot - Free WhatsApp Bot</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <style>
 :root {
@@ -30,7 +30,6 @@ body {
 }
 @keyframes fadeIn { to { opacity: 1; } }
 
-/* ── HEADER ── */
 .header {
   background: var(--bg);
   padding: 40px 20px 50px;
@@ -39,7 +38,6 @@ body {
   overflow: visible;
 }
 
-/* Developer Image — Heavy Animation */
 .owner-img-wrap {
   position: relative;
   display: inline-block;
@@ -75,9 +73,7 @@ body {
   object-fit: cover;
   position: relative;
   z-index: 1;
-  box-shadow:
-    8px 8px 20px var(--shadow-dark),
-    -8px -8px 20px var(--shadow-light);
+  box-shadow: 8px 8px 20px var(--shadow-dark), -8px -8px 20px var(--shadow-light);
   animation: floatImg 3s ease-in-out infinite;
 }
 @keyframes floatImg {
@@ -85,7 +81,6 @@ body {
   50%       { transform: translateY(-8px) scale(1.03); }
 }
 
-/* Pulse rings around photo */
 .pulse-ring {
   position: absolute;
   top: 50%; left: 50%;
@@ -123,10 +118,8 @@ body {
   margin-top: 10px;
 }
 
-/* ── CONTAINER ── */
 .container { max-width: 800px; margin: 0 auto; padding: 0 16px 40px; }
 
-/* ── OWNER BADGE ── */
 .owner-badge {
   display: flex;
   align-items: center;
@@ -136,7 +129,6 @@ body {
   border-radius: 20px;
   padding: 16px 20px;
   margin-bottom: 24px;
-  direction: rtl;
 }
 .owner-badge-img {
   width: 48px; height: 48px;
@@ -149,7 +141,6 @@ body {
 .owner-badge-text { font-size: 0.85rem; }
 .owner-badge-text strong { color: var(--green-dark); display: block; font-size: 0.9rem; }
 
-/* ── TABS ── */
 .tabs {
   display: flex;
   gap: 8px;
@@ -179,7 +170,6 @@ body {
   color: var(--green-dark);
 }
 
-/* ── CARDS ── */
 .card {
   background: var(--bg);
   box-shadow: 10px 10px 20px var(--shadow-dark), -10px -10px 20px var(--shadow-light);
@@ -197,8 +187,7 @@ body {
   gap: 8px;
 }
 
-/* ── INPUTS ── */
-label { display: block; margin-bottom: 6px; font-size: 0.8rem; color: var(--muted); font-weight: 600; text-align: right; }
+label { display: block; margin-bottom: 6px; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
 .input-wrap { margin-bottom: 14px; }
 input[type=text], input[type=password], input[type=tel] {
   width: 100%;
@@ -219,7 +208,6 @@ input:focus {
 }
 input::placeholder { color: var(--muted); }
 
-/* ── BUTTONS ── */
 .btn {
   width: 100%;
   padding: 15px;
@@ -243,15 +231,7 @@ input::placeholder { color: var(--muted); }
 .btn-green:hover { transform: translateY(-2px); box-shadow: 8px 10px 20px rgba(18,140,126,0.4), -4px -4px 10px var(--shadow-light); }
 .btn-green:active { transform: translateY(0); box-shadow: 4px 4px 8px rgba(18,140,126,0.4); }
 .btn-green:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-.btn-outline {
-  background: var(--bg);
-  border: 2px solid var(--green);
-  color: var(--green-dark);
-  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
-}
-.btn-outline:hover { background: var(--green); color: #fff; }
 
-/* ── ALERTS ── */
 .alert { padding: 14px 16px; border-radius: 14px; margin-top: 14px; font-size: 0.88rem; display: none; }
 .alert-success {
   background: var(--bg);
@@ -272,7 +252,6 @@ input::placeholder { color: var(--muted); }
   border-left: 4px solid var(--blue);
 }
 
-/* ── CODE BOX ── */
 .code-box {
   background: var(--bg);
   box-shadow: inset 6px 6px 14px var(--shadow-dark), inset -6px -6px 14px var(--shadow-light);
@@ -286,12 +265,12 @@ input::placeholder { color: var(--muted); }
   color: var(--green-dark);
   font-family: monospace;
   direction: ltr;
+  cursor: pointer;
 }
 .code-label { font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 6px; }
 
-/* ── STEPS ── */
 .steps { }
-.step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); direction: rtl; }
+.step { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
 .step:last-child { border: none; }
 .step-num {
   background: linear-gradient(135deg, var(--green-dark), var(--green));
@@ -306,7 +285,6 @@ input::placeholder { color: var(--muted); }
 .step-text { font-size: 0.88rem; line-height: 1.7; color: var(--text); }
 .step-text strong { color: var(--green-dark); }
 
-/* ── FEATURES GRID ── */
 .features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
 .feature-item {
   background: var(--bg);
@@ -316,7 +294,6 @@ input::placeholder { color: var(--muted); }
   display: flex;
   align-items: center;
   gap: 12px;
-  direction: rtl;
   transition: all 0.2s;
 }
 .feature-item:hover {
@@ -337,7 +314,23 @@ input::placeholder { color: var(--muted); }
   box-shadow: 2px 2px 5px rgba(18,140,126,0.3);
 }
 
-/* ── FOOTER ── */
+.channel-banner {
+  background: linear-gradient(135deg, var(--green-dark), var(--green));
+  border-radius: 18px;
+  padding: 18px 22px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 6px 6px 14px rgba(18,140,126,0.35);
+  cursor: pointer;
+  text-decoration: none;
+}
+.channel-banner-icon { font-size: 2rem; flex-shrink: 0; }
+.channel-banner-text { color: #fff; }
+.channel-banner-text strong { display: block; font-size: 1rem; font-weight: 700; }
+.channel-banner-text span { font-size: 0.8rem; opacity: 0.85; }
+
 .footer {
   text-align: center;
   padding: 30px;
@@ -347,7 +340,6 @@ input::placeholder { color: var(--muted); }
 }
 .footer a { color: var(--green-dark); text-decoration: none; font-weight: 600; }
 
-/* ── SPINNER ── */
 .spinner {
   display: inline-block;
   width: 18px; height: 18px;
@@ -363,7 +355,6 @@ input::placeholder { color: var(--muted); }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* Confirm toast */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -398,52 +389,62 @@ input::placeholder { color: var(--muted); }
     <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Sahil Hacker" class="owner-img">
   </div>
   <h1>🤖 SAHIL 804 BOT</h1>
-  <p>Free WhatsApp Bot — Bilkul Muft!</p>
+  <p>Free WhatsApp Bot — 100% Free!</p>
   <div class="badge">⚡ Powered by Sahil Hacker | v4.0.0</div>
 </div>
 
 <div class="container">
 
+  <!-- Channel Banner -->
+  <a href="https://whatsapp.com/channel/0029Vb7ufE7It5rzLqedDc3l" target="_blank" class="channel-banner">
+    <div class="channel-banner-icon">📢</div>
+    <div class="channel-banner-text">
+      <strong>Join Our WhatsApp Channel</strong>
+      <span>Updates, new features & announcements</span>
+    </div>
+    <div style="margin-left:auto;color:#fff;font-size:1.3rem;">→</div>
+  </a>
+
   <div class="owner-badge">
     <img src="https://i.ibb.co/b51SYm0X/IMG-20260408-WA0010.jpg" alt="Owner" class="owner-badge-img">
     <div class="owner-badge-text">
       <strong>👑 Developer: Sahil Hacker</strong>
-      📞 Contact: +92 349 6049312
+      📞 Want your own bot? Contact: +92 349 6049312
     </div>
   </div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('pair')">📱 Pair Karein</button>
-    <button class="tab" onclick="switchTab('deploy')">🚀 Bot Deploy</button>
+    <button class="tab active" onclick="switchTab('pair')">📱 Pair Bot</button>
+    <button class="tab" onclick="switchTab('deploy')">🚀 Deploy Bot</button>
     <button class="tab" onclick="switchTab('features')">⭐ Features</button>
   </div>
 
   <!-- TAB 1: PAIR -->
   <div id="tab-pair" class="tab-content active">
     <div class="card">
-      <h2><span>📱</span> WhatsApp Pair Karein</h2>
-      <label>Apna WhatsApp Number (with country code)</label>
+      <h2><span>📱</span> Connect Your WhatsApp</h2>
+      <label>Your WhatsApp Number (with country code)</label>
       <div class="input-wrap">
         <input type="tel" id="pairNumber" placeholder="923001234567" dir="ltr" maxlength="15">
       </div>
-      <button class="btn btn-green" onclick="doPair()" id="pairBtn">📲 Pair Code Mangvayein</button>
+      <button class="btn btn-green" onclick="doPair()" id="pairBtn">📲 Get Pair Code</button>
       <div class="alert alert-error" id="pairError"></div>
       <div id="pairResult" style="display:none">
-        <div class="alert alert-success" id="pairSuccess" style="display:block">✅ Pair code aa gaya!</div>
-        <div class="code-box" id="pairCode">----</div>
-        <div class="code-label">Yeh code WhatsApp → Linked Devices → Link a Device mein dalein</div>
+        <div class="alert alert-success" id="pairSuccess" style="display:block">✅ Pair code received! Tap to copy.</div>
+        <div class="code-box" id="pairCode" onclick="copyCode()" title="Click to copy">----</div>
+        <div class="code-label">Enter this code in WhatsApp → Linked Devices → Link a Device → Link with phone number</div>
       </div>
     </div>
 
     <div class="card">
-      <h2><span>📖</span> Kaise Karein?</h2>
+      <h2><span>📖</span> How to Connect?</h2>
       <div class="steps">
-        <div class="step"><div class="step-num">1</div><div class="step-text">Upar apna <strong>WhatsApp number</strong> likha aur "Pair Code Mangvayein" dabayein</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-text">Jo <strong>8 anka code</strong> aaye, use copy karein</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-text">WhatsApp kholein → <strong>3 dots</strong> → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → <strong>Phone Number se Link karein</strong></div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-text">Code dalne ke baad WhatsApp par <strong>Session ID</strong> aayega</div></div>
-        <div class="step"><div class="step-num">5</div><div class="step-text">"Bot Deploy" tab mein jayen aur Session ID paste karein</div></div>
-        <div class="step"><div class="step-num">6</div><div class="step-text">✅ <strong>Bot chal jaayega!</strong></div></div>
+        <div class="step"><div class="step-num">1</div><div class="step-text">Enter your <strong>WhatsApp number</strong> above and click "Get Pair Code"</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-text">Copy the <strong>8-digit code</strong> that appears</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-text">Open WhatsApp → <strong>3 dots menu</strong> → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → <strong>Link with phone number</strong></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-text">Enter the code — WhatsApp will send you a <strong>Session ID</strong></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-text">Go to <strong>"Deploy Bot"</strong> tab and paste the Session ID</div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-text">✅ <strong>Your bot is live!</strong></div></div>
       </div>
     </div>
   </div>
@@ -451,12 +452,12 @@ input::placeholder { color: var(--muted); }
   <!-- TAB 2: DEPLOY -->
   <div id="tab-deploy" class="tab-content">
     <div class="card">
-      <h2><span>🚀</span> Bot Chalayein</h2>
-      <label>Session ID (WhatsApp par mila tha)</label>
+      <h2><span>🚀</span> Start Your Bot</h2>
+      <label>Session ID (received on WhatsApp after pairing)</label>
       <div class="input-wrap">
         <input type="text" id="deploySession" placeholder="SAH-XXXXXXXX" dir="ltr">
       </div>
-      <button class="btn btn-green" onclick="doDeploy()" id="deployBtn">⚡ Bot Start Karein</button>
+      <button class="btn btn-green" onclick="doDeploy()" id="deployBtn">⚡ Start Bot</button>
       <div class="alert" id="deployMsg"></div>
     </div>
   </div>
@@ -464,7 +465,7 @@ input::placeholder { color: var(--muted); }
   <!-- TAB 3: FEATURES -->
   <div id="tab-features" class="tab-content">
     <div class="card">
-      <h2><span>⭐</span> Bot Ki Khasiyatein</h2>
+      <h2><span>⭐</span> Bot Features</h2>
       <div class="features-grid">
         <div class="feature-item"><div class="feature-icon">📥</div><div><div class="feature-text">TikTok Download</div><div class="feature-badge">✅ Working</div></div></div>
         <div class="feature-item"><div class="feature-icon">📸</div><div><div class="feature-text">Instagram Reel/Post</div><div class="feature-badge">✅ Working</div></div></div>
@@ -472,7 +473,11 @@ input::placeholder { color: var(--muted); }
         <div class="feature-item"><div class="feature-icon">🎵</div><div><div class="feature-text">YouTube MP3</div><div class="feature-badge">✅ Working</div></div></div>
         <div class="feature-item"><div class="feature-icon">🐦</div><div><div class="feature-text">Twitter/X Video</div><div class="feature-badge">✅ Working</div></div></div>
         <div class="feature-item"><div class="feature-icon">🎬</div><div><div class="feature-text">Dailymotion</div><div class="feature-badge">✅ Working</div></div></div>
-        <div class="feature-item"><div class="feature-icon">❤️</div><div><div class="feature-text">Auto React</div><div class="feature-badge">✅ Active</div></div></div>
+        <div class="feature-item"><div class="feature-icon">👁️</div><div><div class="feature-text">View Once Saver</div><div class="feature-badge">✅ NEW</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🖼️</div><div><div class="feature-text">Set Group DP</div><div class="feature-badge">✅ NEW</div></div></div>
+        <div class="feature-item"><div class="feature-icon">⚙️</div><div><div class="feature-text">.settings Command</div><div class="feature-badge">✅ NEW</div></div></div>
+        <div class="feature-item"><div class="feature-icon">🌐</div><div><div class="feature-text">Public / Private Mode</div><div class="feature-badge">✅ NEW</div></div></div>
+        <div class="feature-item"><div class="feature-icon">❤️</div><div><div class="feature-text">Smart Auto React</div><div class="feature-badge">✅ 30 Emojis</div></div></div>
         <div class="feature-item"><div class="feature-icon">💬</div><div><div class="feature-text">Auto Reply</div><div class="feature-badge">✅ Active</div></div></div>
         <div class="feature-item"><div class="feature-icon">🗑️</div><div><div class="feature-text">Anti-Delete</div><div class="feature-badge">✅ Active</div></div></div>
         <div class="feature-item"><div class="feature-icon">🚫</div><div><div class="feature-text">Anti-Spam</div><div class="feature-badge">✅ Active</div></div></div>
@@ -486,19 +491,32 @@ input::placeholder { color: var(--muted); }
     </div>
     <div class="card">
       <h2><span>📝</span> Commands List</h2>
-      <div style="font-size:0.85rem;line-height:2.2;direction:ltr;color:var(--muted);">
-        <strong style="color:var(--green-dark)">.menu / .help</strong> — Tamam commands<br>
-        <strong style="color:var(--green-dark)">.ping</strong> — Bot speed<br>
-        <strong style="color:var(--green-dark)">.alive</strong> — Bot status<br>
-        <strong style="color:var(--green-dark)">.owner</strong> — Developer info<br>
-        <strong style="color:var(--green-dark)">.dl &lt;url&gt;</strong> — Smart download<br>
-        <strong style="color:var(--green-dark)">.tiktok .ig .fb .ytmp3 .twitter .dm</strong> — Platform downloads<br>
+      <div style="font-size:0.85rem;line-height:2.4;direction:ltr;color:var(--muted);">
+        <strong style="color:var(--green-dark)">.menu / .help</strong> — All commands<br>
+        <strong style="color:var(--green-dark)">.ping / .alive</strong> — Bot status<br>
+        <strong style="color:var(--green-dark)">.settings</strong> — Toggle features on/off<br>
+        <strong style="color:var(--green-dark)">.public / .private</strong> — Bot mode (Owner)<br>
+        <strong style="color:var(--green-dark)">.dl &lt;url&gt;</strong> — Smart download (all sites)<br>
+        <strong style="color:var(--green-dark)">.t .i .f .y .tw .dm</strong> — Short download aliases<br>
+        <strong style="color:var(--green-dark)">.sticker / .toimg</strong> — Sticker tools<br>
+        <strong style="color:var(--green-dark)">.view</strong> — Save view-once media<br>
+        <strong style="color:var(--green-dark)">.setdp</strong> — Change group/personal DP<br>
+        <strong style="color:var(--green-dark)">.sim / .weather / .news / .calc / .id</strong> — Info<br>
         <strong style="color:var(--green-dark)">.joke .quote .flip .dice .fact</strong> — Fun<br>
-        <strong style="color:var(--green-dark)">.kick .add .promote .demote</strong> — Group admin<br>
-        <strong style="color:var(--green-dark)">.mute .unmute .tagall .groupinfo</strong> — Group tools<br>
-        <strong style="color:var(--green-dark)">.autoreact .autoreply .antilink .antispam</strong> — Owner settings<br>
-        <strong style="color:var(--green-dark)">.broadcast .block .unblock</strong> — Owner commands
+        <strong style="color:var(--green-dark)">.kick .add .promote .demote .mute .unmute</strong> — Group<br>
+        <strong style="color:var(--green-dark)">.tagall .groupinfo .resetlink .rules .setrules</strong> — Group tools<br>
+        <strong style="color:var(--green-dark)">.broadcast .block .unblock</strong> — Owner only
       </div>
+    </div>
+
+    <!-- Contact Banner -->
+    <div class="card" style="text-align:center;">
+      <div style="font-size:2rem;margin-bottom:10px;">🤖</div>
+      <h2 style="justify-content:center;">Want Your Own WhatsApp Bot?</h2>
+      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:18px;">Get a custom bot made by Sahil Hacker — just like this one!</p>
+      <a href="https://wa.me/923496049312" target="_blank" class="btn btn-green" style="display:block;text-decoration:none;text-align:center;padding:15px;">
+        📞 Contact Sahil Hacker
+      </a>
     </div>
   </div>
 
@@ -530,14 +548,28 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+function copyCode() {
+  const code = document.getElementById('pairCode').textContent;
+  if (code === '----') return;
+  navigator.clipboard.writeText(code.replace(/-/g,'')).then(() => {
+    showToast('✅ Code copied!');
+  }).catch(() => {
+    showToast('✅ ' + code);
+  });
+}
+
 async function doPair() {
   const num = document.getElementById('pairNumber').value.replace(/[^0-9]/g,'');
   const errEl = document.getElementById('pairError');
   errEl.style.display = 'none';
-  if (num.length < 10) { errEl.textContent = '❌ Sahi number dein (country code ke saath)'; errEl.style.display='block'; return; }
+  if (num.length < 10) {
+    errEl.textContent = '❌ Please enter a valid number with country code (e.g. 923001234567)';
+    errEl.style.display='block';
+    return;
+  }
   const btn = document.getElementById('pairBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Intezaar karein...';
+  btn.innerHTML = '<span class="spinner"></span> Please wait...';
   try {
     const r = await fetch('/api/pair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ number: num }) });
     const d = await r.json();
@@ -545,33 +577,38 @@ async function doPair() {
       document.getElementById('pairCode').textContent = d.code;
       document.getElementById('pairResult').style.display = 'block';
       document.getElementById('deploySession').value = d.sessionId;
-      showToast('✅ Pair code mil gaya!');
+      showToast('✅ Pair code received!');
     } else {
       errEl.textContent = '❌ ' + d.error;
       errEl.style.display = 'block';
     }
   } catch(e) {
-    errEl.textContent = '❌ Server error. Dobara try karein.';
+    errEl.textContent = '❌ Server error. Please try again.';
     errEl.style.display = 'block';
   }
   btn.disabled = false;
-  btn.innerHTML = '📲 Pair Code Mangvayein';
+  btn.innerHTML = '📲 Get Pair Code';
 }
 
 async function doDeploy() {
   const id = document.getElementById('deploySession').value.trim();
   const msgEl = document.getElementById('deployMsg');
-  if (!id) { msgEl.className='alert alert-error'; msgEl.textContent='❌ Session ID dein.'; msgEl.style.display='block'; return; }
+  if (!id) {
+    msgEl.className='alert alert-error';
+    msgEl.textContent='❌ Please enter Session ID.';
+    msgEl.style.display='block';
+    return;
+  }
   const btn = document.getElementById('deployBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Start ho raha hai...';
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
   try {
     const r = await fetch('/api/deploy', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: id }) });
     const d = await r.json();
     if (d.success) {
       msgEl.className = 'alert alert-success';
       msgEl.textContent = '✅ ' + d.message;
-      showToast('🚀 Bot start ho gaya!');
+      showToast('🚀 Bot started!');
     } else {
       msgEl.className = 'alert alert-error';
       msgEl.textContent = '❌ ' + d.error;
@@ -582,7 +619,7 @@ async function doDeploy() {
   }
   msgEl.style.display = 'block';
   btn.disabled = false;
-  btn.innerHTML = '⚡ Bot Start Karein';
+  btn.innerHTML = '⚡ Start Bot';
 }
 </script>
 </body>
