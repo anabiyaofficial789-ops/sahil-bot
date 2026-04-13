@@ -25,6 +25,7 @@ const { generateSessionId } = require('../src/utils/helpers');
 const SESSIONS_DIR = path.resolve(path.join(__dirname, '../sessions'));
 
 const app    = express();
+app.set('trust proxy', 1); // ✅ FIX: Reverse proxy (Render/Railway) ke liye zaroori
 const server = http.createServer(app);
 const io     = new Server(server);
 const silentLogger = pino({ level: 'silent' });
